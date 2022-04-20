@@ -1,18 +1,21 @@
 
 # Habitat Suitability Models (HSMs)
 # Nikol Dimitrov, Richard Scuster and Juan Zuloaga
-# v1. March 2002: basic pipeline
+# Basic script
 
 # version.string R version 3.6.3 (2020-02-29)
+R.Version()
 
 ######### START PIPELINE ######################
 
 # 0. Packages required -----------
 
-devtools::install_github("kapitzas/WorldClimTiles")
-
-list.of.packages <- c("rgbif", "raster", 'dismo', 'ENMeval', 'dplyr', 'adehabitatHR', "rgeos", "sf", "WorldClimTiles", "virtualspecies")
+list.of.packages <- c("devtools", "rgbif", "raster", 'dismo', 'ENMeval', 'dplyr', 'adehabitatHR', "rgeos", "sf", "WorldClimTiles", "virtualspecies")
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+
+devtools::install_github("kapitzas/WorldClimTiles") # to load and merge BIOCLIM tiles
+                                                    # (https://github.com/kapitzas/WorldClimTiles/blob/master/README.md)
+
 
 if(length(new.packages)) install.packages(new.packages)
 
