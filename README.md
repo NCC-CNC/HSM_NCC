@@ -1,7 +1,7 @@
 # Habitat Suitability Models (HSMs)
 ## Collaborators
-Juan Zuloaga and Andrew Gonzalez (McGill University)
-Nikol Dimitrov and Richard Schuster (The Nature Conservancy of Canada)
+- Juan Zuloaga and Andrew Gonzalez (McGill University)
+- Nikol Dimitrov and Richard Schuster (The Nature Conservancy of Canada)
 
 ## Objectives
 Develop HSMs using citizen science data as a tool to help The Nature Conservancy of Canada in conservation planning.
