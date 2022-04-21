@@ -1,15 +1,15 @@
 # Habitat Suitability Models (HSMs)
-#### Collaborators
+### Collaborators
 - Juan Zuloaga and Andrew Gonzalez (McGill University)
 - Nikol Dimitrov and Richard Schuster (The Nature Conservancy of Canada)
 
-## Objectives
+### Objectives
 Develop HSMs using citizen science data as a tool to help The Nature Conservancy of Canada in conservation planning.
 
-## Scope
+### Scope
 This is an exploratory analysis using coarse resolution datasets (~1km2).  
 
-## Data
+### Data
 - Observations (points): Citizen science data
 - Predictors (rasters):
   - **Topographic heterogeneity** developed by <a href="https://www.nature.com/articles/sdata201840" target="_blank">Amatulli et al 2018</a>. Access date (September 17, 20)  <a href="http://www.earthenv.org/topography" target="_blank">on this website</a>. `Vector Ruggedness Measure (VRM)`, `Roughness`, `Eastness`, `Northness`, `Slope`.
@@ -17,16 +17,16 @@ This is an exploratory analysis using coarse resolution datasets (~1km2).
   - **BIOCLIM (1970-2000)**. Nineteen (19) bioclimatic variables from <a href="https://www.worldclim.org/data/worldclim21.html" target="_blank">Worldclim</a> (<a href="https://rmets.onlinelibrary.wiley.com/doi/abs/10.1002/joc.1276" target="_blank">Hijmans et al 2005</a>). 
   - **Distance to water**. We calculated the distance to from every single grid cell in the study region to the nearest grid cell representing a lake, using lakes datasset from <a href="https://hydrosheds.org/page/hydrolakes" target="_blank">HydroLakes v1</a>.
 
-## Methods
+### Methods
 - We used <a href="https://www.sciencedirect.com/science/article/pii/S030438000500267X" target="_blank">Maxent</a>  algorithm implemented in the `ENMeval` v.2.0.0 package (<a href="https://besjournals.onlinelibrary.wiley.com/doi/full/10.1111/2041-210X.13628?campaign=woletoc" target="_blank">Kass et al 2021</a>) in R.
 - Spatial thining: To avoid issues of spatial sampling and reduce spatial autocorrelation in our HSMs estimates we thinned the occurrence data set of each species using a thinning algorithm (implemented in the <a href="https://cran.r-project.org/web/packages/spThin/index.html" target="_blank">spThin</a> package by (<a href="https://onlinelibrary.wiley.com/doi/full/10.1111/ecog.01132" target="_blank">Aiello-Lammens et al 2015</a>), using a distance of 5 Km.
 - Multicolinearity: we used a correlation coefficient threshold of 0.7 (<a href="https://onlinelibrary.wiley.com/doi/full/10.1111/j.1600-0587.2012.07348.x">Dormann et al 2012</a>) to select a set of uncorrelated variables, using <a href="http://127.0.0.1:19644/library/virtualspecies/html/removeCollinearity.html" target="_blank">removeCollinearity</a> fucntion from the <a href="https://onlinelibrary.wiley.com/doi/full/10.1111/ecog.01388" target="_blank">virtualspecies</a> package in R.
 
-## Outputs (rasters 1km2)
+### Outputs (rasters 1km2)
 - Habitat suitability map 
 - Uncertainty map (coeficient of variation 10 runs best model)
 
-## Tasks
+### Tasks
 - Script basic structure (completed)
 - Observations: for every single species include long and lat coordinates (csv file )or shapefile. GBIF dataset???? If so, cleaning module 
 - Predictors (Juan will transfer data sets to Nikol).   climate:  (<a href="https://chelsa-climate.org/" target="_blank">CHELSA</a>) `bio` data set (1980-2010)??If so, download and mask (Nikol).
