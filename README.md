@@ -4,7 +4,7 @@
 - Nikol Dimitrov and Richard Schuster (The Nature Conservancy of Canada)
 
 ### Objectives
-Develop HSMs using citizen science data as a tool to help The Nature Conservancy of Canada in conservation planning.
+Develop HSMs for a selected group of species in Canada, using citizen science data as a complementary tool to help The Nature Conservancy of Canada in conservation planning.
 
 ### Scope
 This is an exploratory analysis using coarse resolution datasets (~1km2).  
