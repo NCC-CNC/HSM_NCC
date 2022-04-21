@@ -37,6 +37,6 @@ This is an exploratory analysis using coarse resolution datasets (~1km2).
   - Identify potencial high suitable areas
   - Variable importance, performance metrics
   - Unceratinty map
-- Generate Markdown document
+- Markdown document (Juan generates it and Nikol develop content)
   
  
