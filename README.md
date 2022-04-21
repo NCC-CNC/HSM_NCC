@@ -26,4 +26,17 @@ This is an exploratory analysis using coarse resolution datasets (~1km2).
 - Add to script (Juan)
   - Base maps: Canada boundary map (with provinces), Protected Areas,  Cities, Roads
   - Spatial thining
+  - Add predictors: Bioclim(19), productivity (3), Topographic heterogeneity (5), distance to lakes(1)
+  - Stack predictors
+  - Remove collinear predictors
+  - Check intersection observation vs predictos (to evaluate observations with NAs)
+  - Define background points
+  - Create sampling bias layer
+  - Model settings
+  - Select best model
+  - Identify potencial high suitable areas
+  - Variable importance, performance metrics
+  - Unceratinty map
+- Generate Markdown document
+  
  
