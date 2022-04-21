@@ -12,7 +12,7 @@ This is an exploratory analysis using coarse resolution datasets (~1km2).
 ### Data
 - Observations (points): Citizen science data
 - Predictors (rasters):
-  - Topographic heterogeneity developed by <a href="https://www.nature.com/articles/sdata201840" target="_blank">Amatulli et al 2018</a>. Access date (September 17, 20)  <a href="http://www.earthenv.org/topography" target="_blank">on this website</a>.
+  - Topographic heterogeneity developed by <a href="https://www.nature.com/articles/sdata201840" target="_blank">Amatulli et al 2018</a>. Access date (September 17, 20)  <a href="http://www.earthenv.org/topography" target="_blank">on this website</a>: Vector Ruggedness Measure (VRM), Roughness, Eastness, Northness, Slope.
 
 
 ### Methods
