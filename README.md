@@ -15,12 +15,15 @@ This is an exploratory analysis using coarse resolution datasets (~1km2).
   - 
 ### Methods
 - We used <a href="https://www.sciencedirect.com/science/article/pii/S030438000500267X" target="_blank">Maxent</a>  algorithm implemented in the `ENMeval` v.2.0.0 package (<a href="https://besjournals.onlinelibrary.wiley.com/doi/full/10.1111/2041-210X.13628?campaign=woletoc" target="_blank">Kass et al 2021</a>) in R.
-
+- Spatial thining: To avoid issues of spatial sampling and reduce spatial autocorrelation in our HSMs estimates we thinned the occurrence data set of each species using a thinning algorithm (implemented in the <a href="https://cran.r-project.org/web/packages/spThin/index.html" target="_blank">spThin</a> package by <a href="https://onlinelibrary.wiley.com/doi/full/10.1111/ecog.01132" target="_blank">Aiello-Lammens et al 2015</a>), using a distance of 5 Km.
+- 
 ### Outputs
 
 ### Tasks
 - Script basic structure (completed)
-- Observations: for every single species include long and lat coordinates (csv file )or shapefile.
+- Observations: for every single species include long and lat coordinates (csv file )or shapefile. GBIF dataset???? If so, cleaning module 
 - Predictors (Juan will transfer data sets to Nikol)
-- 
-- 
+- Add to script (Juan)
+  - Base maps: Canada boundary map (with provinces), Protected Areas,  Cities, Roads
+  - Spatial thining
+ 
