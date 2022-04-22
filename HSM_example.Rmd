@@ -1,0 +1,61 @@
+---
+title: "Habitat Suitability Models"
+author: "Juan Zuloaga, Nikol Dimitrov, Richard Schuster, Andrew Gonzalez"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+
+## Species
+
+`r myspecies`
+
+
+```{r}
+plot(box_extent_analysis_bf$geometry)
+plot(Obs_gbif_data_sp, col="red", pch=20, add=T)
+
+```
+
+
+## Predictors (example)
+
+```{r}
+
+plot(lakes_100m_agg)
+plot(box_extent_analysis_bf$geometry, add=T)
+plot(Obs_gbif_data_sp, col="red", pch=20, add=T)
+
+```
+
+
+## Prediction map
+
+
+```{r}
+ # e_pol <- st_bbox(box_extent_analysis_bf_aeac)
+#model_species_prediction_e <- setExtent(model_species_prediction, c(e_pol[1], e_pol[3], e_pol[2], e_pol[4]))
+plot(model_species_prediction_p)
+plot(box_extent_analysis_bf_aeac$geometry, add=T)
+plot(Obs_gbif_data_sf, col="red", pch=20, add=T)
+```
+
+## Uncertainty map
+
+```{r}
+  
+
+plot(uncertainty_p)
+plot(box_extent_analysis_bf_aeac$geometry, add=T)
+plot(Obs_gbif_data_sf, col="red", pch=20, add=T)
+
+```
+
+
+
+
