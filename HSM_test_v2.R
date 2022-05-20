@@ -10,16 +10,21 @@ R.Version()
 
 # 0. Packages required -----------
 
-list.of.packages <- c("devtools", "rgbif", "raster", 'dismo', 'ENMeval', 'dplyr', 'adehabitatHR', "rgeos", "sf", "WorldClimTiles", "virtualspecies")
+list.of.packages <- c("devtools", "rgbif", "raster", 'dismo', 'ENMeval', 'dplyr', "ecospat",
+                      'adehabitatHR', "rgeos", "sf", "spThin", "WorldClimTiles", "virtualspecies")
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 
 devtools::install_github("kapitzas/WorldClimTiles") # to load and merge BIOCLIM tiles
                                                     # (https://github.com/kapitzas/WorldClimTiles/blob/master/README.md)
 
 
+
 if(length(new.packages)) install.packages(new.packages)
 
 lapply(list.of.packages, library, character.only =TRUE) 
+
+
+system.file("java", package="dismo")
 
 # 1. Settings ----------
 
@@ -53,13 +58,11 @@ lapply(list.of.packages, library, character.only =TRUE)
 # 1.5. Setting Projection to preserve area for all files 
   
   # Lon-Lat 
-   # wgs84 <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0 "
-    wgs84 <- "+proj=longlat +datum=WGS84 +no_defs"
+   wgs84 <- "+proj=longlat +datum=WGS84 +no_defs"
+   
   # Albers Equal Area Conic
   #[See:](https://spatialreference.org/ref/esri/102001/proj4/) 
     aeac="+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-96 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs"
-
-
 
 
 # 2. Species -----------
@@ -91,9 +94,29 @@ lapply(list.of.packages, library, character.only =TRUE)
   # create data.frame
   Obs_gbif_data_df <- data.frame(Obs_gbif_data_sp)
   
+  # Add field with species number e.g., sp1 (for calculation in thining)
+  Obs_gbif_data_df$SPEC <- "sp1"                  
+  
   # Transform for plotting
   Obs_gbif_data_sf <- st_as_sf(Obs_gbif_data_sp)%>%
     st_transform(aeac)
+
+  
+# 3.5 Spatial thining
+  
+  obs_thin <- thin(Obs_gbif_data_df,
+                               long.col = "X1",
+                                lat.col = "X2",
+                               spec.col = "SPEC",
+                               thin.par =  5,            # Define minimum distance between observation (let's say 5 km) 
+                               reps=1,
+                               locs.thinned.list.return = TRUE,
+                               write.files = FALSE,
+                               write.log.file = FALSE)%>%
+    data.frame()
+ 
+  
+  
   
 # 4. Area of study -------------
   
@@ -174,13 +197,14 @@ lapply(list.of.packages, library, character.only =TRUE)
   clim_tiles <- tile_get(box_extent_bioclim, name =  "worldclim", var="bio", path = "./bioclim_t") # for 0.5 arcmin worldclim tiles of 
   
   # Merging tiles
-  clim_tiles_merge <- tile_merge(clim_tiles)
+  clim_tiles_merge <- tile_merge(clim_tiles) %>%
+      resample(vrm, method = "ngb")
   
   
   
   # Agregagate (Let's try coarse resolution to speed up the process)!!!!!!!!!!!!!!!!
-  clim_tiles_merge_agg <- raster::aggregate(clim_tiles_merge, fact=10, fun=mean) %>%
-    resample(vrm, method = "ngb")
+  #clim_tiles_merge_agg <- raster::aggregate(clim_tiles_merge, fact=10, fun=mean) %>%
+  #  resample(vrm, method = "ngb")
   
   
   
@@ -238,34 +262,105 @@ lapply(list.of.packages, library, character.only =TRUE)
                    if(maxValue(fpar_b1_mean) != 0 && minValue(fpar_b1_mean) !=0){fpar_b1_mean}else{},
                    if(maxValue(fpar_b2_mean) != 0 && minValue(fpar_b2_mean) !=0){fpar_b2_mean}else{},
                    if(maxValue(fpar_b3_mean) != 0 && minValue(fpar_b3_mean) !=0){fpar_b3_mean}else{},
-                   clim_tiles_merge_agg, na.rm=T)
+                   clim_tiles_merge, na.rm=T)
     
     
 # 5.5. Removing collinear variables
 
-# Calculating colinearity
+# Calculating collinearity
     collinearity_test <- removeCollinearity(predictors,
                                              multicollinearity.cutoff = 0.70, 
                                              plot = F, select.variables = T, sample.points = FALSE)
 
-  # Subsetting variables
+  # Sub-setting variables
     noncollinear_predictors <- stack(subset(predictors, collinearity_test))
+    #%>%
+    #projectRaster(crs = aeac, res = 1000, method='bilinear')
+   
+# 6. Creating background points ----------
+    # Identify number of background points (bg) for HSMs within the geographic range (EBARs), testing three bg.
+    
+    # Selecting cell grids within geographic range (EBARs)
+    georange_raster <- raster::mask(noncollinear_predictors[[1]], Ecod_sp_join_id_diss_s)
+    
+    # Calculating number of grid cells in predictor variable
+    pixel_1000Km2 <- (1000*1000)/1000000
+    study_area_size <- cellStats((((noncollinear_predictors[[1]]*0)+1)*pixel_1000Km2), 'sum', na.rm=T)
+    
+    # Selecting bg (two options: in case small geographic ranges)
+    
+    small_study_area <- 0.40 # take 40% if area of study contains more than 100,000 grid cells
+    
+    huge_study_area <- 0.20 # take 20% if area of study contains less than 100,000 grid cells
+    
+    if(study_area_size < 100000){
+     
+      background_points <- c(
+        round(study_area_size*small_study_area, 0)
+      )
+    }else{
+     
+      background_points <- c(
+       round(study_area_size*huge_study_area, 0)
+      )
+    }
+    
+# 7. Creating sampling bias layer-----------
+    
+    # Creating a sampling bias layer to select background point from these areas
+    
+    # UsIng MASS::kde2d
+   
+    points_thin_sf <- st_as_sf(data.frame(obs_thin), coords=c("Longitude","Latitude"), crs=wgs84)
+    
+    
+    obs_density <- MASS::kde2d(st_coordinates(st_as_sf(st_transform(points_thin_sf, crs = aeac)))[,1],
+                              st_coordinates(st_as_sf(st_transform(points_thin_sf, aeac)))[,2],
+                              lims = c(range(noncollinear_predictors[[1]]@extent@xmin,
+                                             noncollinear_predictors[[1]]@extent@xmax),
+                                       range(noncollinear_predictors[[1]]@extent@ymin,
+                                             noncollinear_predictors[[1]]@extent@ymax))) %>%
+      raster()
+    
+    proj4string(obs_density) <- aeac
+    
+    
+    obs_density_a <- raster::disaggregate(obs_density, fact=22, method="bilinear") %>%
+      resample(noncollinear_predictors[[1]])%>%
+      mask(box_extent_analysis_bf_aeac)  
+    obs_density_a_wgs84 <- projectRaster(obs_density_a, crs = wgs84, res = 0.008333333)
+    
+    
+   
+# 8. Model fitting ------
+
+# 8.1. Renaming observations columns
+    occs <- st_as_sf(x = obs_thin,                         
+                        coords =c("Longitude","Latitude"), crs=wgs84)
+      
+    occs_df <-  data.frame(st_coordinates(occs))%>%
+     dplyr::rename(Longitude = X,  Latitude =  Y)
+ 
+   
+# 8.2 creating pseudo-absences
+    
+    
+    bg_points <- dismo::randomPoints(obs_density_a_wgs84, n = background_points) %>% as.data.frame()
+    colnames(bg_points) <- colnames(obs_thin)
+    
+    # background using bias
+    bg_bias <- xyFromCell(!is.na(obs_density_a_wgs84),
+                          sample(ncell(!is.na(obs_density_a_wgs84)),
+                                 nrow(bg_points),
+                                 prob =  values(!is.na(obs_density_a_wgs84))))
+    colnames(bg_bias) <- colnames(occs_df)
+    
     
 
-# 6. Model fitting ------
-
-# 6.1. Renaming observations columns
-  occs <- dplyr::select(Obs_gbif_data_df, X1, X2) %>%
-    dplyr::rename(longitude = X1,  latitude =  X2)
-
-
-# 6.2 creating pseudo-absences
-  bg_points <- dismo::randomPoints(clim_tiles_merge_agg$bio1_01, n = 5000) %>% as.data.frame()
-  colnames(bg_points) <- colnames(occs)
-
-
-# 6.3 Modeling (using Maxent in ENMeval) basic parameters
-  model_species <- ENMeval::ENMevaluate(occs = occs, envs = noncollinear_predictors , bg = bg_points, 
+# 8.3 Modeling (using Maxent in ENMeval) basic parameters
+  model_species <- ENMeval::ENMevaluate(occs = occs_df,
+                                        envs = noncollinear_predictors,
+                                        bg = bg_bias, 
                                         algorithm = 'maxent.jar',
                                         partitions = 'block',
                                         tune.args = list(fc = "L", rm = 1),
@@ -274,11 +369,11 @@ lapply(list.of.packages, library, character.only =TRUE)
                                         parallelType = "doParallel"
   )
 
-# 7. Predictions -------
+# 9. Predictions -------
 
   model_species_prediction <- eval.predictions(model_species)
   
-# 8.  Model uncertainty ---------
+# 10.  Model uncertainty ---------
 
 # let's run 10 models and calculate the coefficient of variance (the only think that will change is background points)
 
@@ -307,10 +402,12 @@ lapply(list.of.packages, library, character.only =TRUE)
     model_10_predictions <- stack(lapply(model_10, eval.predictions))
     uncertainty <- cv(model_10_predictions)
 
-# 9. Projecting outputs -----------
+# 11. Projecting outputs -----------
   # Projecting to aeac to preserve areas and allow calcualtions 
   model_species_prediction_p <- projectRaster(model_species_prediction, crs = aeac, res = 1000, method = "bilinear")
   uncertainty_p <- projectRaster(uncertainty, crs = aeac, res = 10000, method = "bilinear")
 
+  
+  plot(model_species_prediction_p)
 #############END PIPELINE ####################################
 
