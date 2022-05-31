@@ -280,9 +280,7 @@ system.file("java", package="dismo")
 # 6. Creating background points ----------
     # Identify number of background points (bg) for HSMs within the geographic range (EBARs), testing three bg.
     
-    # Selecting cell grids within geographic range (EBARs)
-    georange_raster <- raster::mask(noncollinear_predictors[[1]], Ecod_sp_join_id_diss_s)
-    
+   
     # Calculating number of grid cells in predictor variable
     pixel_1000Km2 <- (1000*1000)/1000000
     study_area_size <- cellStats((((noncollinear_predictors[[1]]*0)+1)*pixel_1000Km2), 'sum', na.rm=T)
@@ -314,23 +312,19 @@ system.file("java", package="dismo")
     points_thin_sf <- st_as_sf(data.frame(obs_thin), coords=c("Longitude","Latitude"), crs=wgs84)
     
     
-    obs_density <- MASS::kde2d(st_coordinates(st_as_sf(st_transform(points_thin_sf, crs = aeac)))[,1],
-                              st_coordinates(st_as_sf(st_transform(points_thin_sf, aeac)))[,2],
+    obs_density <- MASS::kde2d(st_coordinates(st_as_sf(points_thin_sf))[,1],
+                              st_coordinates(st_as_sf(points_thin_sf))[,2],
                               lims = c(range(noncollinear_predictors[[1]]@extent@xmin,
                                              noncollinear_predictors[[1]]@extent@xmax),
                                        range(noncollinear_predictors[[1]]@extent@ymin,
                                              noncollinear_predictors[[1]]@extent@ymax))) %>%
+    
       raster()
     
-    proj4string(obs_density) <- aeac
+    obs_density_a_wgs84 <- projectRaster(obs_density, crs = wgs84, res = 0.008333333)%>%
+      resample(noncollinear_predictors[[1]])
     
-    
-    obs_density_a <- raster::disaggregate(obs_density, fact=22, method="bilinear") %>%
-      resample(noncollinear_predictors[[1]])%>%
-      mask(box_extent_analysis_bf_aeac)  
-    obs_density_a_wgs84 <- projectRaster(obs_density_a, crs = wgs84, res = 0.008333333)
-    
-    
+    plot(obs_density_a_wgs84)
    
 # 8. Model fitting ------
 
