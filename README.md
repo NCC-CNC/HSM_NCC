@@ -32,19 +32,18 @@ Develop HSMs for a selected group of species in Canada, using citizen science da
 - Observations: for every single species include long and lat coordinates (csv file )or shapefile. GBIF dataset???? If so, cleaning module 
 - Predictors (Juan will transfer data sets to Nikol). (COMPLETED)  climate:  (<a href="https://chelsa-climate.org/" target="_blank">CHELSA</a>) `bio` data set (1980-2010)??If so, download and mask (Nikol).
 - Add to script (Juan)
-  - Base maps: Canada boundary map (with provinces), Protected Areas,  Cities, Roads
-  - Spatial thining
+  - Base maps: Canada boundary map (with provinces), Protected Areas,  Cities, Roads (COMPLETED)
+  - Spatial thining (COMPLETED)
   - Add predictors: Bioclim(19), productivity (3), Topographic heterogeneity (5), distance to lakes(1) (COMPLETED)
   - Stack predictors (COMPLETED)
   - Remove collinear predictors (COMPLETED)
-  - Check intersection observation vs predictos (to evaluate observations with NAs)
-  - Define background points
-  - Create sampling bias layer
+  - Define background points (COMPLETED)
+  - Create sampling bias layer (COMPLETED)
   - Model settings
   - Select best model
   - Identify potencial high suitable areas
   - Variable importance, performance metrics
   - Unceratinty map
-- Markdown document (Juan generates it and Nikol develop content) (COMPLETED)
+- Markdown document: Juan generates (COMPLETED) it and Nikol develop content.
   
  
