@@ -324,8 +324,7 @@ system.file("java", package="dismo")
     obs_density_a_wgs84 <- projectRaster(obs_density, crs = wgs84, res = 0.008333333)%>%
       resample(noncollinear_predictors[[1]])
     
-    plot(obs_density_a_wgs84)
-   
+
 # 8. Model fitting ------
 
 # 8.1. Renaming observations columns
