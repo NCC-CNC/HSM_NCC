@@ -373,14 +373,23 @@ system.file("java", package="dismo")
   # Modelling
     model_10 <- list()
     
-    for(i in 1:10){
+    for(i in 1:3){
       cat(paste0("Testing background points_model_", i), '\n')
       
-      library(dismo)
-      bg_points <- dismo::randomPoints(clim_tiles_merge_agg$bio1_01, n = 5000) %>% as.data.frame()
-      colnames(bg_points) <- colnames(occs)
       
-      model_10[[i]] <- ENMevaluate(occs = occs, envs = clim_tiles_merge_agg , bg = bg_points, 
+      bg_points <- dismo::randomPoints(obs_density_a_wgs84, n = background_points) %>% as.data.frame()
+      colnames(bg_points) <- colnames(obs_thin)
+      
+      # background using bias
+      bg_bias <- xyFromCell(!is.na(obs_density_a_wgs84),
+                            sample(ncell(!is.na(obs_density_a_wgs84)),
+                                   nrow(bg_points),
+                                   prob =  values(!is.na(obs_density_a_wgs84))))
+      colnames(bg_bias) <- colnames(occs_df)
+      
+      model_10[[i]] <- ENMevaluate(occs = occs_df,
+                                   envs = noncollinear_predictors,
+                                   bg = bg_bias, 
                                    algorithm = 'maxent.jar',
                                    partitions = 'block',
                                    tune.args = list(fc = "L", rm = 1),
@@ -391,16 +400,17 @@ system.file("java", package="dismo")
       
     }
 
-  # Calcualting coeficient of variance
+  # Calculating coefficient of variance
     model_10_predictions <- stack(lapply(model_10, eval.predictions))
-    uncertainty <- cv(model_10_predictions)
+    uncertainty <- raster::cv(model_10_predictions, na.rm=F)
 
 # 11. Projecting outputs -----------
-  # Projecting to aeac to preserve areas and allow calcualtions 
+  # Projecting to aeac to preserve areas and allow calculations 
   model_species_prediction_p <- projectRaster(model_species_prediction, crs = aeac, res = 1000, method = "bilinear")
-  uncertainty_p <- projectRaster(uncertainty, crs = aeac, res = 10000, method = "bilinear")
+  uncertainty_p <- projectRaster(uncertainty, crs = aeac, res = 1000, method = "bilinear")
 
-  
+  par(mfrow=c(1,2))
   plot(model_species_prediction_p)
+  plot(uncertainty_p)
 #############END PIPELINE ####################################
 
