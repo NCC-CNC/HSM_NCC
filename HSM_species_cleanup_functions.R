@@ -113,22 +113,72 @@ plot_gbif_data <- function(data) {
   }
 }
 
-# FUNCTION 4 - Spatial thinning alogrithm & convert to spatial points to be fed into MaxEnt 
+# FUNCTION 4 - Spatial thinning alogrithm 
 
-thin_data_convert_sp_points <- function(data, speciesname, thinning_par = 1, reps = 100) {
+thin_data <- function(data, thinning_par = 1) {
   
   # run algorithm 
-  thin(data, lat.col = 'decimalLatitude', long.col = 'decimalLongitude', spec.col = 'scientificName', thin.par = thinning_par, 
-       reps = reps, write.files = TRUE, max.files = 1, out.dir = "C:/HSM_NCC/thinned_species_data", out.base = paste0("thinned_",speciesname), write.log.file = TRUE, log.file = paste0("C:/HSM_NCC/thinned_species_data/thinned_",speciesname,"_log.txt"))
+  Obs_data_thinned <- thin(data, lat.col = 'decimalLatitude', long.col = 'decimalLongitude', spec.col = 'scientificName', thin.par = thinning_par, 
+       reps = 1,
+       locs.thinned.list.return = TRUE,
+       write.files = FALSE,
+       write.log.file = FALSE)%>%
+    data.frame()
   
+  return(Obs_data_thinned)
+}
+
+# FUNCTION 5 - Convert to spatial points 
+
+convert_spatial_points <- function(data){
   # make into spatial points
-  Obs_data_thinned <- readr::read_csv(paste0("thinned_species_data/thinned_",speciesname,"_thin1.csv"))
-  Obs_data_sp <- data.frame(cbind(Obs_data_thinned$decimalLongitude, Obs_data_thinned$decimalLatitude))%>% 
+  
+  Obs_data_sp <- data.frame(cbind(data$Longitude, data$Latitude))%>% 
     sp::SpatialPoints(proj4string = CRS(wgs84))
   
-  # write to a dataframe 
-  Obs_data_df <- data.frame(Obs_data_sp) %>% 
-    dplyr::rename(longitude = X1,  latitude =  X2)
-  
-  return(Obs_data_df)
+  return(Obs_data_sp)
+
 }
+
+## This can now be completed in 6 steps for each species 
+
+# Abronia latifolia - perennial flower in coastal BC
+Abronia <- export_gbif_data("Abronia latifolia")#export available gbif data
+plot_gbif_data(Abronia) #plot initial occurrences 
+cl_Abronia <- clean_gbif_data(Abronia) #clean dataset 
+plot_gbif_data(cl_Abronia) #plot cleaned occurrences 
+Abronia_latifolia <- thin_data(cl_Abronia) #thin data and convert to spatial points
+Abronia_latifolia_sp <- convert_spatial_points(Abronia_latifolia)
+
+
+# Acer nigrum (black maple) - species of maple in Southern Ontario
+Acer <- export_gbif_data("Acer nigrum")
+plot_gbif_data(Acer)
+cl_Acr <- clean_gbif_data(Acer)
+plot_gbif_data(cl_Acr)
+Acer_nigrum <- thin_data(cl_Acr)
+Acer_nigrum_sp <- convert_spatial_points(Acer_nigrum)
+
+# Acer saccharinum (silver maple) - species of maple in southeastern Canada
+Acer_s <- export_gbif_data("Acer saccharinum")
+plot_gbif_data(Acer_s)
+cl_Acr_s <- clean_gbif_data(Acer_s)
+plot_gbif_data(cl_Acr_s)
+Acer_saccharinum <- thin_data(cl_Acr_s)
+Acer_saccharinum_sp <- convert_spatial_points(Acer_saccharinum)
+
+# Acorus americanus (American sweet flag) - plant species found throughout Canada
+Acorus <- export_gbif_data("Acorus americanus")
+plot_gbif_data(Acorus)
+cl_Acorus <- clean_gbif_data(Acorus)
+plot_gbif_data(cl_Acorus)
+Acourus_americanus <- thin_data(cl_Acorus)
+Acourus_americanus_sp <- convert_spatial_points(Acourus_americanus)
+
+# Actaea pachypoda (white baneberry) - flowering plant found in eastern Canada
+Actaea <- export_gbif_data("Actaea pachypoda")
+plot_gbif_data(Actaea)
+cl_Actea <- clean_gbif_data(Actaea)
+plot_gbif_data(cl_Actea)
+Actaea_pachypoda <- thin_data(cl_Actea)
+Actaea_pachypoda_sp <- convert_spatial_points(Actaea_pachypoda)
