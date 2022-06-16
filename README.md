@@ -44,7 +44,7 @@ Develop HSMs for a selected group of species in Canada, using citizen science da
   - Variable importance, performance metrics (COMPLETED)
   - Add If(polygon or GBIF)
   - Identify potencial high suitable areas
-  - Unceratinty map
+  - Uncertainty map
 - Markdown document: Juan generates (COMPLETED) it and Nikol develop content.
   
  
