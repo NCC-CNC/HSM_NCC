@@ -40,8 +40,8 @@ Develop HSMs for a selected group of species in Canada, using citizen science da
   - Define background points (COMPLETED)
   - Create sampling bias layer (COMPLETED)
   - Model settings (COMPELTED)
-  - Select best model (CMPLETED)
-  - Variable importance, performance metrics (COMPELTED)
+  - Select best model (COMPLETED)
+  - Variable importance, performance metrics (COMPLETED)
   - Add If(polygon or GBIF)
   - Identify potencial high suitable areas
   - Unceratinty map
