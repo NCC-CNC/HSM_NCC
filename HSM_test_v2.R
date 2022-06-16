@@ -351,20 +351,100 @@ system.file("java", package="dismo")
     
 
 # 8.3 Modeling (using Maxent in ENMeval) basic parameters
+    
+  # 8.3.1 Model settings
+    
+    # 5.1 Selecting features based on number of occurrences ---------------
+    if(nrow(occs_df) <=10){
+      meth = 'jackknife'
+      features <- "L"
+    }else if(nrow(occs_df) >10 && nrow(occs_df) <=15){
+      meth = 'jackknife'
+      features <- c("L", "Q", "LQ")
+    }else if(nrow(occs_df) >15 && nrow(occs_df) <=25){
+      meth = 'jackknife'
+      features <- c("L", "Q", "H", "LQ", "QH")
+    }else if(nrow(occs_df) >25 && nrow(occs_df) <=80){
+      meth = 'randomkfold'
+      features <- c("L", "Q", "H", "LQ", "QH")
+    }else if(nrow(occs_df) > 80){
+      meth = 'randomkfold'
+      features <- c("Q",  "H", "LQ", "LQP", "QPT")
+    }
+    features
+    meth
+    
+    
+  # 8.3.2 Partition: select method based on number of occurrences
+    
+    if(nrow(occs_df) <=25){
+      user_partition  <- get.jackknife(occs_df, bg_bias)
+      
+    }else if(nrow(occs_df) > 25){
+      user_partition  <- get.randomkfold(occs_df, bg_bias, 10)
+      
+    }
+    
+    
+    
+# 8.3.4. Run model, using ENMeval package (Maxent algorithm)
+    
   model_species <- ENMeval::ENMevaluate(occs = occs_df,
                                         envs = noncollinear_predictors,
                                         bg = bg_bias, 
                                         algorithm = 'maxent.jar',
-                                        partitions = 'block',
-                                        tune.args = list(fc = "L", rm = 1),
+                                        method = meth,
+                                        partitions = 'user',
+                                        user.grp = list(occs.grp = user_partition$occs.grp,
+                                                        bg.grp = user_partition$bg.grp),
+                                        tune.args = list(fc = features, rm = c(0.05,0.5, 1)), # let' test 3 values
                                         parallel =  TRUE,
+                                        doClamp = T,
                                         updateProgress = TRUE,
                                         parallelType = "doParallel"
+                                        
   )
 
+ # 8.3.5 Model results 
+  
+  # All models
+    model_species@results
+  
+  # let's add background point and observations
+    res_model_species$bg_points <- length(model_species@bg[,1])
+    res_model_species$occs_points <- length(model_species@occs.grp)
+  
+  #best_model_species <- model_species@models[model_species@results$or.10p.avg == min(res_model_species$or.10p.avg)]
+  
+  # Let's now choose the optimal model settings based on the sequential criteria and examine it.
+    # lowest value of omission rate (or.10p.avg)
+    # to resolve tied or.10p.avg, we used highest AUC value (auc.val.avg)
+  
+    optimal_model <- eval.results(model_species)%>%
+      filter(!is.na(or.10p.avg))%>% 
+      filter(or.10p.avg == min(or.10p.avg)) %>% 
+      filter(auc.val.avg == max(auc.val.avg))
+  
+    optimal_model
+
+  # Variable importance
+    mod.seq <- eval.models(model_species)[[optimal_model$tune.args]]
+    variable_importance <- as.data.frame(model_species@variable.importance[[as.vector(optimal_model$tune.args[1])]])[,-2]
+    variable_importance
+    
 # 9. Predictions -------
 
-  model_species_prediction <- eval.predictions(model_species)
+  all_model_prediction <- eval.predictions(model_species)
+  
+  
+  best_model_prediction <- eval.predictions(model_species)[[optimal_model$tune.args]]
+  plot(best_model_prediction)
+  plot(occs, add=T)
+  
+  
+  ############ STOP HERE, WE WILL REVISIT UNCERTAINTY #################################
+  
+  #####################################################################################
   
 # 10.  Model uncertainty ---------
 
@@ -406,11 +486,11 @@ system.file("java", package="dismo")
 
 # 11. Projecting outputs -----------
   # Projecting to aeac to preserve areas and allow calculations 
-  model_species_prediction_p <- projectRaster(model_species_prediction, crs = aeac, res = 1000, method = "bilinear")
-  uncertainty_p <- projectRaster(uncertainty, crs = aeac, res = 1000, method = "bilinear")
-
-  par(mfrow=c(1,2))
-  plot(model_species_prediction_p)
-  plot(uncertainty_p)
+    model_species_prediction_p <- projectRaster(model_species_prediction, crs = aeac, res = 1000, method = "bilinear")
+    uncertainty_p <- projectRaster(uncertainty, crs = aeac, res = 1000, method = "bilinear")
+  
+    par(mfrow=c(1,2))
+    plot(model_species_prediction_p)
+    plot(uncertainty_p)
 #############END PIPELINE ####################################
 
