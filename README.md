@@ -39,10 +39,11 @@ Develop HSMs for a selected group of species in Canada, using citizen science da
   - Remove collinear predictors (COMPLETED)
   - Define background points (COMPLETED)
   - Create sampling bias layer (COMPLETED)
-  - Model settings
-  - Select best model
+  - Model settings (COMPELTED)
+  - Select best model (CMPLETED)
+  - Variable importance, performance metrics (COMPELTED)
+  - Add If(polygon or GBIF)
   - Identify potencial high suitable areas
-  - Variable importance, performance metrics
   - Unceratinty map
 - Markdown document: Juan generates (COMPLETED) it and Nikol develop content.
   
