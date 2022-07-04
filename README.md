@@ -4,14 +4,14 @@
 - Nikol Dimitrov and Richard Schuster (The Nature Conservancy of Canada)
 
 ### Objectives
-Develop HSMs for a selected group of species in Canada, using citizen science data as a complementary tool to help The Nature Conservancy of Canada in conservation planning.
+Develop HSMs for a selected group of species in Canada as a complementary tool to help The Nature Conservancy of Canada in conservation planning.
 
 ### Scope/Extent
 - This is an exploratory analysis using coarse resolution datasets (~1km2).
 - Canada
 
 ### Data
-- Observations (points): GBIF
+- Observations (points): <a href="https://www.gbif.org/" target="_blank">GBIF</a>
 - Predictors (rasters):
   - **Topographic heterogeneity** developed by <a href="https://www.nature.com/articles/sdata201840" target="_blank">Amatulli et al 2018</a>. Access date (September 17, 20)  <a href="http://www.earthenv.org/topography" target="_blank">on this website</a>. `Vector Ruggedness Measure (VRM)`, `Roughness`, `Eastness`, `Northness`, `Slope`.
   - **The Dynamic Habitat Index (DHI)** is an integrated metric of vegetation production from satellite imagery that measures the fraction of photosynthetically active radiation (or fPAR) intercepted by vegetation (<a href="https://www.sciencedirect.com/science/article/pii/S1470160X08000071?casa_token=r7JKpy2f-ocAAAAA:MxkcwYeyPJx-n8_i4efA3gqAWuXOcebBwILc_faNT1oP2otQFxFiF_Zvzcq9As0n0wTBnW2ATA#bib53" target="_blank">Coops et al 2008</a>). `Cummulative annual productivity`, `the minimum level of vegetation cover`, and `the degree of seasonality`. Access date: November, 2019. Spatial resolution: 0.0083 decimal degrees (~ 1 Km resolution). Datasets downloaded from: (<a href="http://silvis.forest.wisc.edu/data/dhis/" target="_blank">DHI, from the Silvis Lab</a>).
