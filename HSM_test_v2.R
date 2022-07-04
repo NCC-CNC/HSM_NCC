@@ -81,7 +81,7 @@ system.file("java", package="dismo")
 # 3.2. Loading data from GBIF (https://www.gbif.org/)
   Obs_gbif_data <- occ_data(scientificName = myspecies,
                           hasCoordinate = TRUE,
-                          limit=5000)         # Important here to set number of observations requiered.
+                          limit=10000)         # Important here to set number of observations required.
                                               # GBIF has a maximum of 100,000.
                                               # If the species has more than 100,000 occ we need to ask GBIF for a zipfile
 
@@ -108,7 +108,7 @@ system.file("java", package="dismo")
                                long.col = "X1",
                                 lat.col = "X2",
                                spec.col = "SPEC",
-                               thin.par =  5,            # Define minimum distance between observation (let's say 5 km) 
+                               thin.par =  2,            # Define minimum distance between observation (let's say 5 km) 
                                reps=1,
                                locs.thinned.list.return = TRUE,
                                write.files = FALSE,
@@ -120,29 +120,61 @@ system.file("java", package="dismo")
   
 # 4. Area of study -------------
   
-# 4.1. Creating box extent to download predictors
+# Creating box extent to download predictors
 
   # Several options here:
     # Geographic range: not for many species
     # Ecoregions
     # ArbitraRy polygon (Ontario, Canada, etc)
-    # MinImum convex polygon with buffer
+    # Minimum convex polygon (MVP) with buffer
   
-  # MinImum convex polygon (mcp) with buffer  
+  # We will implement two options; (i) if range map exist read .shp file;
+  #                               (ii) if not create MCP with buffer     
+
+# 4.1 Loading species list table
   
+  species_rangemap <- read.csv("./Data/species_list/species_list.csv")
+  myspecies_rangemap <- species_rangemap[species_rangemap$Species.Name == myspecies, ]
+  
+  
+if(myspecies_rangemap$Range == "Yes"){
+  
+# 4.2 Range map
+  
+  # Box extent
+    box_extent_analysis <- st_read(paste0("./Data/range_maps/", chartr(" ", "_", myspecies), ".shp"))
+  
+  # Buffering box extent
+    box_extent_analysis_bf <-  st_transform(box_extent_analysis$geometry, crs=wgs84)%>%
+      st_union()%>%
+      as("Spatial")
+  
+    # Transform for plotting
+    box_extent_analysis_bf_aeac <- st_as_sf(box_extent_analysis_bf)%>%
+      st_transform(aeac)
+  
+}else{
+  
+# 4.3 MinImum convex polygon (mcp) with buffer  
+  
+  # Box extent
     box_extent_analysis <- mcp(Obs_gbif_data_sp, percent = 100)%>%
      st_as_sf()%>%
       st_transform(crs=aeac)
     
-    # Buffering box extent
-      box_extent_analysis_bf <-  st_buffer(box_extent_analysis, dist =  100000)%>%
-        st_transform(crs=wgs84)
+  # Buffering box extent
+    box_extent_analysis_bf <-  st_buffer(box_extent_analysis, dist =  100000)%>%
+      st_transform(crs=wgs84)%>%
+      st_union()%>%
+      as("Spatial")
 
-    # Tranform for plotting
-      box_extent_analysis_bf_aeac <- st_as_sf(box_extent_analysis_bf)%>%
-        st_transform(aeac)
+  # Transform for plotting
+    box_extent_analysis_bf_aeac <- st_as_sf(box_extent_analysis_bf)%>%
+      st_transform(aeac)
 
-     
+}
+      
+  
 
 # 5. Predictors ------------
 
@@ -186,7 +218,7 @@ system.file("java", package="dismo")
   
   # Idenfitying tiles based on Area of study
   
-  box_extent_bioclim <- tile_name(as(box_extent_analysis_bf, 'Spatial'), "worldclim") # determine which WorldClim tiles your study area intersects with.
+  box_extent_bioclim <- tile_name(box_extent_analysis_bf, "worldclim") # determine which WorldClim tiles your study area intersects with.
   
   # Creating folder
   if(dir.exists("./bioclim_t")){
@@ -277,6 +309,8 @@ system.file("java", package="dismo")
     #%>%
     #projectRaster(crs = aeac, res = 1000, method='bilinear')
    
+  
+    
 # 6. Creating background points ----------
     # Identify number of background points (bg) for HSMs within the geographic range (EBARs), testing three bg.
     
@@ -287,19 +321,27 @@ system.file("java", package="dismo")
     
     # Selecting bg (two options: in case small geographic ranges)
     
-    small_study_area <- 0.40 # take 40% if area of study contains more than 100,000 grid cells
+    small_study_area <- 0.40 # take 40% if area of study contains less than 100,000 grid cells
     
-    huge_study_area <- 0.20 # take 20% if area of study contains less than 100,000 grid cells
+    huge_study_area <- 0.20 # take 20% if area of study contains  100,000 - 1,000,000 grid cells
+    
+    very_huge_study_area <- 0.05 # take 20% if area of study contains less than 1,000,000 grid cells
+    
     
     if(study_area_size < 100000){
      
       background_points <- c(
         round(study_area_size*small_study_area, 0)
       )
-    }else{
+    }else if(study_area_size >= 100000 & study_area_size < 1000000){
      
       background_points <- c(
        round(study_area_size*huge_study_area, 0)
+      )
+    }else if(study_area_size >= 1000000){
+      
+      background_points <- c(
+        round(study_area_size*very_huge_study_area, 0)
       )
     }
     
@@ -327,21 +369,27 @@ system.file("java", package="dismo")
 
 # 8. Model fitting ------
 
-# 8.1. Renaming observations columns
-    occs <- st_as_sf(x = obs_thin,                         
-                        coords =c("Longitude","Latitude"), crs=wgs84)
+# 8.1. Checking for intersection of predictors stack and observations
+    
+    points_predictors_overlap <- raster::extract(noncollinear_predictors, points_thin_sf, df=T)%>%
+    na.omit()
+    obs_thin_noNA <- obs_thin[as.vector(points_predictors_overlap$ID),]
+    
+   
+    # Creating final occs (occurrences) object
+    
+    occs <- st_as_sf(x = obs_thin_noNA,                         
+                        coords =c("Longitude","Latitude"), crs=wgs84) #Renaming observations columns
       
     occs_df <-  data.frame(st_coordinates(occs))%>%
      dplyr::rename(Longitude = X,  Latitude =  Y)
  
    
-# 8.2 creating pseudo-absences
-    
+# 8.2 creating background points (pseudo-absences) using bias layer
     
     bg_points <- dismo::randomPoints(obs_density_a_wgs84, n = background_points) %>% as.data.frame()
-    colnames(bg_points) <- colnames(obs_thin)
+    colnames(bg_points) <- colnames(obs_thin_noNA)
     
-    # background using bias
     bg_bias <- xyFromCell(!is.na(obs_density_a_wgs84),
                           sample(ncell(!is.na(obs_density_a_wgs84)),
                                  nrow(bg_points),
@@ -408,7 +456,7 @@ system.file("java", package="dismo")
  # 8.3.5 Model results 
   
   # All models
-    model_species@results
+  res_model_species <- model_species@results
   
   # let's add background point and observations
     res_model_species$bg_points <- length(model_species@bg[,1])
@@ -425,8 +473,6 @@ system.file("java", package="dismo")
       filter(or.10p.avg == min(or.10p.avg)) %>% 
       filter(auc.val.avg == max(auc.val.avg))
   
-    optimal_model
-
   # Variable importance
     mod.seq <- eval.models(model_species)[[optimal_model$tune.args]]
     variable_importance <- as.data.frame(model_species@variable.importance[[as.vector(optimal_model$tune.args[1])]])[,-2]
@@ -435,7 +481,6 @@ system.file("java", package="dismo")
 # 9. Predictions -------
 
   all_model_prediction <- eval.predictions(model_species)
-  
   
   best_model_prediction <- eval.predictions(model_species)[[optimal_model$tune.args]]
   plot(best_model_prediction)
@@ -448,6 +493,12 @@ system.file("java", package="dismo")
   
 # 10.  Model uncertainty ---------
 
+# Selecting best model - parameters
+  
+  best_model_maxent <- model_species@models[model_species@results$or.10p.avg == min(optimal_model$or.10p.avg) & model_species@results$auc.val.avg == max(optimal_model$auc.val.avg)]
+  
+  optimal_model_param$rm <- data.frame(optimal_model)
+  as.vector(optimal_model_param$rm)
 # let's run 10 models and calculate the coefficient of variance (the only think that will change is background points)
 
   # Modelling
@@ -458,21 +509,37 @@ system.file("java", package="dismo")
       
       
       bg_points <- dismo::randomPoints(obs_density_a_wgs84, n = background_points) %>% as.data.frame()
-      colnames(bg_points) <- colnames(obs_thin)
+      colnames(bg_points) <- colnames(obs_thin_noNA)
       
       # background using bias
-      bg_bias <- xyFromCell(!is.na(obs_density_a_wgs84),
+      bg_bias_b <- xyFromCell(!is.na(obs_density_a_wgs84),
                             sample(ncell(!is.na(obs_density_a_wgs84)),
                                    nrow(bg_points),
                                    prob =  values(!is.na(obs_density_a_wgs84))))
-      colnames(bg_bias) <- colnames(occs_df)
+      colnames(bg_bias_b) <- colnames(occs_df)
+      
+      
+      # 8.3.2 Partition: select method based on number of occurrences
+      
+      if(nrow(occs_df) <=25){
+        user_partition_b  <- get.jackknife(occs_df, bg_bias_b)
+        
+      }else if(nrow(occs_df) > 25){
+        user_partition_b  <- get.randomkfold(occs_df, bg_bias_b, 10)
+        
+      }
+      
+      
+      user_partition_b$bg.grp
       
       model_10[[i]] <- ENMevaluate(occs = occs_df,
-                                   envs = noncollinear_predictors,
-                                   bg = bg_bias, 
+                                   envs = noncollinear_predictors, bg = bg_bias_b,
+                                   partitions='user',
+                                   user.grp = list(occs.grp = user_partition_b$occs.grp,
+                                                   bg.grp = user_partition_b$bg.grp),
+                                   method = meth,
                                    algorithm = 'maxent.jar',
-                                   partitions = 'block',
-                                   tune.args = list(fc = "L", rm = 1),
+                                   tune.args = list(fc = optimal_model$fc, rm = as.numeric(as.vector(optimal_model$rm))),
                                    parallel =  TRUE,
                                    updateProgress = TRUE,
                                    parallelType = "doParallel"
@@ -486,11 +553,14 @@ system.file("java", package="dismo")
 
 # 11. Projecting outputs -----------
   # Projecting to aeac to preserve areas and allow calculations 
-    model_species_prediction_p <- projectRaster(model_species_prediction, crs = aeac, res = 1000, method = "bilinear")
+    model_species_prediction_p <- projectRaster(best_model_prediction, crs = aeac, res = 1000, method = "bilinear")
     uncertainty_p <- projectRaster(uncertainty, crs = aeac, res = 1000, method = "bilinear")
   
     par(mfrow=c(1,2))
     plot(model_species_prediction_p)
+    plot(box_extent_analysis_bf_aeac, add=T)
     plot(uncertainty_p)
+    plot(box_extent_analysis_bf_aeac, add=T)
+    
 #############END PIPELINE ####################################
 
