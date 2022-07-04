@@ -20,6 +20,7 @@ Develop HSMs for a selected group of species in Canada as a complementary tool t
   - **Percentage of lakes**. We calculated the number of lake-pixels (100m) within a 1000 pixel size, using lakes datasset from <a href="https://hydrosheds.org/page/hydrolakes" target="_blank">HydroLakes v1</a>.
 
 ### Methods
+#### Model settings
 - We used <a href="https://www.sciencedirect.com/science/article/pii/S030438000500267X" target="_blank">Maxent</a>  algorithm implemented in the `ENMeval` v.2.0.0 package (<a href="https://besjournals.onlinelibrary.wiley.com/doi/full/10.1111/2041-210X.13628?campaign=woletoc" target="_blank">Kass et al 2021</a>) in R.
 - Spatial filtering (thining): To reduce spatial sampling bias and spatial autocorrelation in species observations we thinned the occurrence data set of each species using a thinning algorithm (implemented in the <a href="https://cran.r-project.org/web/packages/spThin/index.html" target="_blank">spThin</a> package by (<a href="https://onlinelibrary.wiley.com/doi/full/10.1111/ecog.01132" target="_blank">Aiello-Lammens et al 2015</a>), using a distance of 1 Km.
 - Multicolinearity: we used a correlation coefficient threshold of 0.7 (<a href="https://onlinelibrary.wiley.com/doi/full/10.1111/j.1600-0587.2012.07348.x">Dormann et al 2012</a>) to select a set of uncorrelated variables, using <a href="http://127.0.0.1:19644/library/virtualspecies/html/removeCollinearity.html" target="_blank">removeCollinearity</a> fucntion from the <a href="https://onlinelibrary.wiley.com/doi/full/10.1111/ecog.01388" target="_blank">virtualspecies</a> package in R.
@@ -38,6 +39,16 @@ Develop HSMs for a selected group of species in Canada as a complementary tool t
     - 0.05
     - 0.50 and,
     - 1.00 (Default in MaxEnt).
+ - Data partitioning method
+    - Crossvalidate (More than 25 observations; kfolds=10).
+    - K-1 Jackknife (less than 25 observations).
+
+#### Model evaluation
+We implemented a sequential method to select the best model using two performance metrics. This approach uses cross-validation results by selecting models with the lowest average test omission rate, and to break ties, with the highest average validation AUC (Kass et al 2020 and Radosavljevic & Anderson 2014). Further analysis were based on this ‘best model’.
+
+- Omission rate (OR) indicates the “fraction of the test localities that fall into pixels not predicted as suitable for the species. A low omission rate is a necessary (but not sufficient) condition for a good model.” (<a href="https://www.sciencedirect.com/science/article/abs/pii/S030438000500267X" target="_blank">Phillips et al., 2006</a>). There is no thresholding rule developed yet to determine the optimal threshold for the omission rate, so we suggest this provisional relative scale (is the model potentially useful?): (0 - 0.25, the model can be informative; 0.25 - 0.50, there is some concern in model predictions; > 0.50 there is high concern in model predictions). Omission rate values(or.10p.avg).
+
+- AUC values are “the probability that a random positive instance and a random negative instance are correctly ordered by the classifier.” (Phillips et al., 2006). AUC values above 0.75 are considered potentially useful (<a href="https://link.springer.com/chapter/10.1007/0-387-22648-6_4" target="_blank">Elith. 2002</a>) and <a href="https://onlinelibrary.wiley.com/doi/full/10.1111/j.0906-7590.2008.5203.x" target="_blank">Phillips and Dudík (2008)</a>). AUC values(auc.val.avg).
 
 ### Outputs (rasters 1km2)
 - Habitat suitability map 
