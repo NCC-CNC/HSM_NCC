@@ -23,11 +23,15 @@ Develop HSMs for a selected group of species in Canada as a complementary tool t
 - We used <a href="https://www.sciencedirect.com/science/article/pii/S030438000500267X" target="_blank">Maxent</a>  algorithm implemented in the `ENMeval` v.2.0.0 package (<a href="https://besjournals.onlinelibrary.wiley.com/doi/full/10.1111/2041-210X.13628?campaign=woletoc" target="_blank">Kass et al 2021</a>) in R.
 - Spatial filtering (thining): To reduce spatial sampling bias and spatial autocorrelation in species observations we thinned the occurrence data set of each species using a thinning algorithm (implemented in the <a href="https://cran.r-project.org/web/packages/spThin/index.html" target="_blank">spThin</a> package by (<a href="https://onlinelibrary.wiley.com/doi/full/10.1111/ecog.01132" target="_blank">Aiello-Lammens et al 2015</a>), using a distance of 1 Km.
 - Multicolinearity: we used a correlation coefficient threshold of 0.7 (<a href="https://onlinelibrary.wiley.com/doi/full/10.1111/j.1600-0587.2012.07348.x">Dormann et al 2012</a>) to select a set of uncorrelated variables, using <a href="http://127.0.0.1:19644/library/virtualspecies/html/removeCollinearity.html" target="_blank">removeCollinearity</a> fucntion from the <a href="https://onlinelibrary.wiley.com/doi/full/10.1111/ecog.01388" target="_blank">virtualspecies</a> package in R.
-- Background points: we selected bg acording to number of pixels in study area:
+- Background points (bg): we selected 'bg' based on to number of pixels in study area:
    - 40% if study area contains < 100,000 pixels
    - 20% if study area contains > 100,000 and < 1,000,000 pixels
    -  5% if study area contains > 1,000,000 pixels
- - Bias layer: we creatted a bias layer to select background points, using  R function/package (<a href="https://rdrr.io/cran/MASS/" target="_blank">MASS::kde2d</a>)
+ - Bias layer: we created a bias raster layer using all observations, using  R function/package (<a href="https://rdrr.io/cran/MASS/" target="_blank">MASS::kde2d</a>).  We used this bias layer to select the background points.
+ - Features: “The idea of Maxent is to estimate a target probability distribution by finding the probability distribution of maximum entropy (i.e., that is most spread out, or closest to uniform), subject to a set of constraints that represent our incomplete information about the target distribution. The information available about the target distribution often presents itself as a set of real-valued variables, called “features”, and the constraints are that the expected value of each feature should match its empirical average (average value for a set of sample points taken from the target distribution). When Maxent is applied to presence-only species distribution modeling, the pixels of the study area make up the space on which the Maxent probability distribution is defined, pixels with known species occurrence records constitute the sample points, and the features are climatic variables, elevation, soil category, vegetation type or other environmental variables, and functions thereof." (<a href="[https://rdrr.io/cran/MASS/](https://www.sciencedirect.com/science/article/abs/pii/S030438000500267X)" target="_blank">Phillips et al., 2006</a>). We used features based on number of occurrences:
+  -  
+
+
 
 ### Outputs (rasters 1km2)
 - Habitat suitability map 
