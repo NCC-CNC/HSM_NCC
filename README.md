@@ -11,7 +11,7 @@ Develop HSMs for a selected group of species in Canada as a complementary tool t
 - Canada
 
 ### Data
-- Observations (points): <a href="[https://example.com](https://www.gbif.org/)" target="_blank" rel="noopener"><span>GBIF</span> </a>
+- Observations (points): <a href=https://www.gbif.org/" target="_blank" rel="noopener"><span>GBIF</span> </a>
 - Extent of the analysis: we used geogrpahic range maps when available; otherwise we created a minimum convex polygon (MCP) using observations and buffered it using a distance of 10Km.
 - Predictors (rasters):
   - **Topographic heterogeneity** developed by <a href="https://www.nature.com/articles/sdata201840" target="_blank">Amatulli et al 2018</a>. Access date (September 17, 20)  <a href="http://www.earthenv.org/topography" target="_blank">on this website</a>. `Vector Ruggedness Measure (VRM)`, `Roughness`, `Eastness`, `Northness`, `Slope`.
