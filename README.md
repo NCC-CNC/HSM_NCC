@@ -50,28 +50,13 @@ We implemented a sequential method to select the best model using two performanc
 
 - AUC values are “the probability that a random positive instance and a random negative instance are correctly ordered by the classifier.” (Phillips et al., 2006). AUC values above 0.75 are considered potentially useful (<a href="https://link.springer.com/chapter/10.1007/0-387-22648-6_4" target="_blank">Elith. 2002</a>) and <a href="https://onlinelibrary.wiley.com/doi/full/10.1111/j.0906-7590.2008.5203.x" target="_blank">Phillips and Dudík (2008)</a>). AUC values(auc.val.avg).
 
+#### Uncertainty map
+We used the best model's parameters and ran 10 times the model, letting the selection of background points to vary in space.  Uncertainty map was calcualted as the coefficient of variation among 10 HSA maps generated in model fitting. we expect low spatial variation in this uncertainty map.
+
 ### Outputs (rasters 1km2)
 - Habitat suitability map 
 - Uncertainty map (coeficient of variation 10 runs best model)
 
-### Tasks
-- Script basic structure (COMPLETED)
-- Observations: for every single species include long and lat coordinates (csv file )or shapefile. GBIF dataset???? If so, cleaning module 
-- Predictors (Juan will transfer data sets to Nikol). (COMPLETED)  climate:  (<a href="https://chelsa-climate.org/" target="_blank">CHELSA</a>) `bio` data set (1980-2010)??If so, download and mask (Nikol).
-- Add to script (Juan)
-  - Base maps: Canada boundary map (with provinces), Protected Areas,  Cities, Roads (COMPLETED)
-  - Spatial thining (COMPLETED)
-  - Add predictors: Bioclim(19), productivity (3), Topographic heterogeneity (5), distance to lakes(1) (COMPLETED)
-  - Stack predictors (COMPLETED)
-  - Remove collinear predictors (COMPLETED)
-  - Define background points (COMPLETED)
-  - Create sampling bias layer (COMPLETED)
-  - Model settings (COMPELTED)
-  - Select best model (COMPLETED)
-  - Variable importance, performance metrics (COMPLETED)
-  - Add If(polygon or GBIF)
-  - Identify potencial high suitable areas
-  - Uncertainty map
-- Markdown document: Juan generates (COMPLETED) it and Nikol develop content.
+
   
  
