@@ -139,42 +139,39 @@ system.file("java", package="dismo")
   
 if(myspecies_rangemap$Range == "Yes"){
   
-# 4.2 Range map
+ # 4.2 Range map
   
   # Box extent
-    box_extent_analysis <- st_read(paste0("./Data/range_maps/", chartr(" ", "_", myspecies), ".shp"))
+  box_extent_analysis <- st_read(paste0("./Data/range_maps/", chartr(" ", "_", myspecies), ".shp"))
+
+    
+  box_extent_analysis_bf <- box_extent_analysis %>% 
+    st_transform(crs = wgs84)
   
-  # Buffering box extent
-    box_extent_analysis_bf <-  st_transform(box_extent_analysis$geometry, crs=wgs84)%>%
-      st_union()%>%
-      as("Spatial")
   
-    # Transform for plotting
-    box_extent_analysis_bf_aeac <- st_as_sf(box_extent_analysis_bf)%>%
-      st_transform(aeac)
+  # Transform for plotting
+  box_extent_analysis_bf_aeac <- st_as_sf(box_extent_analysis_bf)%>%
+    st_transform(aeac)
   
 }else{
   
-# 4.3 MinImum convex polygon (mcp) with buffer  
+  # 4.3 MinImum convex polygon (mcp) with buffer  
   
   # Box extent
-    box_extent_analysis <- mcp(Obs_gbif_data_sp, percent = 100)%>%
-     st_as_sf()%>%
-      st_transform(crs=aeac)
-    
-  # Buffering box extent
-    box_extent_analysis_bf <-  st_buffer(box_extent_analysis, dist =  100000)%>%
-      st_transform(crs=wgs84)%>%
-      st_union()%>%
-      as("Spatial")
-
-  # Transform for plotting
-    box_extent_analysis_bf_aeac <- st_as_sf(box_extent_analysis_bf)%>%
-      st_transform(aeac)
-
-}
-      
+  box_extent_analysis <- mcp(Obs_gbif_data_sp, percent = 100)%>%
+    st_as_sf()%>%
+    st_transform(crs=aeac)
   
+  # Buffering box extent
+  box_extent_analysis_bf <-  st_buffer(box_extent_analysis, dist =  100000)%>%
+    st_transform(crs=wgs84)
+  
+  # Transform for plotting
+  box_extent_analysis_bf_aeac <- st_as_sf(box_extent_analysis_bf)%>%
+    st_transform(aeac)
+  
+}
+
 
 # 5. Predictors ------------
 
