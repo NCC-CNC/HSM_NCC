@@ -217,7 +217,6 @@ fpar_b1_mean <- lapply(fpar_all, raster, band=1) %>%           # Create raster
   resample(vrm, method = "ngb")                                # resample using previous raster
 names(fpar_b1_mean) <- "Cummulative_annual_productivity_b1"    # rename variable
 
-
 #  Band 2
 fpar_b2_mean <- lapply(fpar_all, raster, band=2) %>%           # Create raster
   stack()  %>%                                                 # Stack them
@@ -226,7 +225,6 @@ fpar_b2_mean <- lapply(fpar_all, raster, band=2) %>%           # Create raster
   resample(vrm, method = "ngb")                                # resample using previous raster
 names(fpar_b2_mean) <- "Minimum_annual_productivity_b2"        # rename variable
 
-
 #  Band 3
 fpar_b3_mean <- lapply(fpar_all, raster, band=3) %>%           # Create raster
   stack()  %>%                                                 # Stack them
@@ -234,7 +232,6 @@ fpar_b3_mean <- lapply(fpar_all, raster, band=3) %>%           # Create raster
   calc(mean)%>%                                                # Apply function to calculate mean
   resample(vrm, method = "ngb")                                # resample using previous raster
 names(fpar_b3_mean) <- "Variation_annual_productivity_b3"      # rename variable
-
 
 # 4.4. Water proximity
 
@@ -312,7 +309,6 @@ Urban_areas <- lapply(Urban_areas_all, raster, band=1) %>%           # Create ra
   calc(mean)
 names(Urban_areas) <- "Urban_areas"
 
-
 # 4.6.  Stacking Predictors ----------
 
 predictors <- stack(vrm,
@@ -334,8 +330,6 @@ predictors <- stack(vrm,
                     if(maxValue(Tree_cover) != 0 ){Tree_cover}else{},
                     if(maxValue(Urban_areas)!=0){Urban_areas}else{}, na.rm=T)
 
-
-
 # 4.7. Removing collinear variables
 
 # Calculating collinearity
@@ -345,12 +339,10 @@ collinearity_test <- removeCollinearity(predictors,
 
 # Sub-setting variables
 noncollinear_predictors <- stack(subset(predictors, collinearity_test))
-
 noncollinear_predictors[[2]]
 
 # 5. Creating background points ----------
 # Identify number of background points (bg) for HSMs within the geographic range (EBARs), testing three bg.
-
 
 # 5.1. Calculating number of grid cells in predictor variable
 pixel_1000Km2 <- (1000*1000)/1000000
@@ -390,7 +382,6 @@ if(study_area_size < 100000){
    round(study_area_size*extremely_huge_study_area, 0)
   )} 
 
-
 # 6. Creating sampling bias layer-----------
 
 # Creating a sampling bias layer to select background point from these areas
@@ -399,19 +390,16 @@ if(study_area_size < 100000){
 
 points_thin_sf <- st_as_sf(data.frame(obs_thin), coords=c("Longitude","Latitude"), crs=wgs84)
 
-
 obs_density <- MASS::kde2d(st_coordinates(st_as_sf(points_thin_sf))[,1],
                            st_coordinates(st_as_sf(points_thin_sf))[,2],
                            lims = c(range(noncollinear_predictors[[1]]@extent@xmin,
                                           noncollinear_predictors[[1]]@extent@xmax),
                                     range(noncollinear_predictors[[1]]@extent@ymin,
                                           noncollinear_predictors[[1]]@extent@ymax))) %>%
-  
   raster()
 
 obs_density_a_wgs84 <- projectRaster(obs_density, crs = wgs84, res = 0.008333333)%>%
   resample(noncollinear_predictors[[1]])
-
 
 # 7. Model fitting ------
 
@@ -433,8 +421,6 @@ bg_bias <- xyFromCell(!is.na(obs_density_a_wgs84),
                              nrow(bg_points),
                              prob =  values(!is.na(obs_density_a_wgs84))))
 colnames(bg_bias) <- colnames(occs_df)
-
-
 
 # 8. Modeling (using Maxent in ENMeval) basic parameters
 
@@ -491,7 +477,6 @@ model_species <- ENMeval::ENMevaluate(occs = occs_df,
                                       
 )
 
-
 # 8.2. Model results 
 
 # 8.2.1. All models
@@ -523,8 +508,6 @@ variable_importance %>%
 # 9. Predictions -------
 
 all_model_prediction <- eval.predictions(model_species)
-
-
 best_model_prediction <- eval.predictions(model_species)[[optimal_model$tune.args]]
 plot(best_model_prediction)
 plot(occs, add=T)
@@ -538,7 +521,6 @@ model_10 <- list()
 
 for(i in 1:3){
   cat(paste0("Testing background points_model_", i), '\n')
-  
   
   bg_points <- dismo::randomPoints(obs_density_a_wgs84, n = background_points) %>% as.data.frame()
   colnames(bg_points) <- colnames(obs_thin)
@@ -587,6 +569,18 @@ levelplot(uncertainty_p, margin = FALSE)
 
 # 12. Write outputs -----------
 
-writeRaster(best_model_prediction, filename = paste0("./Results/SAR_from_ECCC/", myspecies,".tif"), options = c('TFW = YES'))
-writeRaster(uncertainty_p, filename = paste0("./Results/SAR_from_ECCC/",myspecies, "_uncertainty.tif"), options = c('TFW = YES'))
+# 12.1. Load and project into NCC national grid 
+
+nat_grid <- raster("./Data/national_grid/constant_grid.tif")
+species_prediction_nat_grid <- projectRaster(best_model_prediction, crs = proj4string(nat_grid), res = 1000, method = "bilinear")
+species_uncertainty_nat_grid <- projectRaster(uncertainty, crs = proj4string(nat_grid), res = 1000, method = "bilinear")
+
+# 12.1.1 Write NCC projected rasters 
+writeRaster(species_prediction_nat_grid, filename = paste0("./Results/SAR_from_ECCC/", myspecies,".tif"), options = c('TFW = YES'))
+writeRaster(species_uncertainty_nat_grid, filename = paste0("./Results/SAR_from_ECCC/",myspecies, "_uncertainty.tif"), options = c('TFW = YES'))
+
+# 12.2. Write aeac projected rasters for calculations 
+writeRaster(model_species_prediction_p, filename = paste0("./Results/SAR_from_ECCC_for_calculations/", myspecies,".tif"), options = c('TFW = YES'))
+writeRaster(uncertainty_p, filename = paste0("./Results/SAR_from_ECCC_for_calculations/",myspecies, "_uncertainty.tif"), options = c('TFW = YES'))
+
 #############END PIPELINE ####################################
