@@ -2,7 +2,7 @@
 # utf8 encoding
 # File Name:     Species_data_cleanup_functions.R
 # Author:        Nikol Dimitrov & Juan Zuloaga
-# Notes:         Species occurrences data cleanup - 5 species with small ranges: Abronia latifolia, Acer nigrum, Acer saccharinum, Acorus americanus, Actaea pachypoda
+# Notes:         Species occurrences data cleanup 
 # ***********************************************************************************************************
 
 # load needed packages for species occurrence cleanup 
