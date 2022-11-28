@@ -55,7 +55,8 @@ We implemented a sequential method to select the best model using two performanc
 #### Uncertainty map
 We used the best model's parameters and ran 10 times the model, letting the selection of background points to vary in space.  Uncertainty map was calcualted as the coefficient of variation among 10 HSA maps generated in model fitting. we expect low spatial variation in this uncertainty map.
 
-### Outputs (rasters 1km2)
+### Outputs (rasters 1km2): 
+The following outputs were projected to the NCC national grid (projection: albers equal area conic, resolution: 1km2)
 - Habitat suitability map 
 - Uncertainty map (coeficient of variation 10 runs best model)
 
