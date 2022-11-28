@@ -3,15 +3,20 @@
 # Nikol Dimitrov, Richard Scuster and Juan Zuloaga
 # Basic script
 
-# version.string R version 3.6.3 (2020-02-29)
+# set Java options here before running any code or packages
+
+options(java.parameters = '-Xmx8g') 
+
+# version.string R version 
 R.Version()
 
 ######### START PIPELINE ######################
 
 # 0. Packages required -----------
 
-list.of.packages <- c("devtools", "rgbif", "raster", 'dismo', 'ENMeval', 'dplyr', "ecospat",
-                      'adehabitatHR', "rgeos", "sf", "spThin", "WorldClimTiles", "virtualspecies")
+list.of.packages <- c("spatialEco", "rgdal", "devtools", "rJava", "rasterVis", "devtools", "ggplot2", "countrycoude",
+                      "CoordinateCleaner", "rgbif", "raster", 'dismo', 'ENMeval', 'dplyr', "ecospat",
+                      'adehabitatHR', "rgeos", "sf", "spThin", "WorldClimTiles", "virtualspecies", "rnaturalearthdata")
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 
 devtools::install_github("kapitzas/WorldClimTiles") # to load and merge BIOCLIM tiles
@@ -42,7 +47,7 @@ system.file("java", package="dismo")
     setwd("C:/HSM_NCC")
 
 
-# 1.3. Creating a directory to save temporary files that will be deleted after process
+# 1.2. Creating a directory to save temporary files that will be deleted after process
   
     if(!dir.exists("./temp_HMs_to_REMOVE")){
       dir.create("./temp_HMs_to_REMOVE")
@@ -51,11 +56,11 @@ system.file("java", package="dismo")
       print("dir exists")
     }
 
-# 1.4. Setting temp directory
+# 1.3. Setting temp directory
   rasterOptions(tmpdir=file.path("./temp_HMs_to_REMOVE"))
 
   
-# 1.5. Setting Projection to preserve area for all files 
+# 1.4. Setting Projection to preserve area for all files 
   
   # Lon-Lat 
    wgs84 <- "+proj=longlat +datum=WGS84 +no_defs"
@@ -65,73 +70,54 @@ system.file("java", package="dismo")
     aeac="+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-96 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs"
 
 
-# 2. Species -----------
-  myspecies <- c("Nestotus macleanii")
+# 2. Occurrences -----------
 
+# 2.1. Loading data from GBIF (https://www.gbif.org/)
 
-# 3.Occurrences ------------
+myspecies <- "Ammodramus bairdii"
+sp <- export_gbif_data(myspecies)
 
-# 3.1. Let's see how many occurrences GBIF has.
-  #using 'key' number instead of the name (because there are getting synonyms too)
+# 2.2. plotting uncleaned data 
 
-  key <- name_suggest(q = myspecies, rank='species')$data$key[1] 
-  occ_search(taxonKey=key, limit=2)
+plot_gbif_data(sp)
 
-  
-# 3.2. Loading data from GBIF (https://www.gbif.org/)
-  Obs_gbif_data <- occ_data(scientificName = myspecies,
-                          hasCoordinate = TRUE,
-                          limit=10000)         # Important here to set number of observations required.
-                                              # GBIF has a maximum of 100,000.
-                                              # If the species has more than 100,000 occ we need to ask GBIF for a zipfile
+# 2.3. clean data 
 
+cl_species <- clean_gbif_data(sp)
+             
+plot_gbif_data(cl_species)
 
-# 3.4. Creating spatial features (points)
-  
-  Obs_gbif_data_sp <- data.frame(cbind(Obs_gbif_data$data$decimalLongitude, Obs_gbif_data$data$decimalLatitude))%>%
-    sp::SpatialPoints(proj4string=CRS(wgs84))
-  
-  # create data.frame
-  Obs_gbif_data_df <- data.frame(Obs_gbif_data_sp)
-  
-  # Add field with species number e.g., sp1 (for calculation in thining)
-  Obs_gbif_data_df$SPEC <- "sp1"                  
-  
-  # Transform for plotting
-  Obs_gbif_data_sf <- st_as_sf(Obs_gbif_data_sp)%>%
-    st_transform(aeac)
+# 2.3.1. (sub-step for species where range exists) read range in and remove points that are outside of it 
 
+range_eccc <- readOGR(paste0("./Data/range_maps/ECCC_Ranges_Polygons/", chartr(" ", "_", myspecies), ".shp"))
+range_eccc$species <- paste0(myspecies)
+
+range_flags <- cc_iucn(x = cl_species, range = range_eccc, lon = "decimalLongitude", lat = "decimalLatitude", value = "flagged")
+
+cl_species_f <- cl_species[range_flags,]
+
+# 2.4. Spatial thining
+
+obs_thin <- thin_data(cl_species_f)
+
+# 2.5. spatial points 
+
+Obs_gbif_data_sp <- convert_spatial_points(obs_thin)
+
+Obs_gbif_data_sp 
   
-# 3.5 Spatial thining
-  
-  obs_thin <- thin(Obs_gbif_data_df,
-                               long.col = "X1",
-                                lat.col = "X2",
-                               spec.col = "SPEC",
-                               thin.par =  2,            # Define minimum distance between observation (let's say 5 km) 
-                               reps=1,
-                               locs.thinned.list.return = TRUE,
-                               write.files = FALSE,
-                               write.log.file = FALSE)%>%
-    data.frame()
- 
-  
-  
-  
-# 4. Area of study -------------
+# 3. Area of study -------------
   
 # Creating box extent to download predictors
 
   # Several options here:
     # Geographic range: not for many species
-    # Ecoregions
-    # ArbitraRy polygon (Ontario, Canada, etc)
     # Minimum convex polygon (MVP) with buffer
   
   # We will implement two options; (i) if range map exist read .shp file;
   #                               (ii) if not create MCP with buffer     
 
-# 4.1 Loading species list table
+# 3.1 Loading species list table
   
   species_rangemap <- read.csv("./Data/species_list/species_list.csv")
   myspecies_rangemap <- species_rangemap[species_rangemap$Species.Name == myspecies, ]
@@ -139,13 +125,14 @@ system.file("java", package="dismo")
   
 if(myspecies_rangemap$Range == "Yes"){
   
- # 4.2 Range map
+ # 3.2 Range map
   
   # Box extent
   box_extent_analysis <- st_read(paste0("./Data/range_maps/", chartr(" ", "_", myspecies), ".shp"))
 
     
   box_extent_analysis_bf <- box_extent_analysis %>% 
+    st_as_sf() %>%
     st_transform(crs = wgs84)
   
   
@@ -155,7 +142,7 @@ if(myspecies_rangemap$Range == "Yes"){
   
 }else{
   
-  # 4.3 MinImum convex polygon (mcp) with buffer  
+  # 3.3 MinImum convex polygon (mcp) with buffer  
   
   # Box extent
   box_extent_analysis <- mcp(Obs_gbif_data_sp, percent = 100)%>%
@@ -173,12 +160,12 @@ if(myspecies_rangemap$Range == "Yes"){
 }
 
 
-# 5. Predictors ------------
+# 4. Predictors ------------
 
 ### Let's start with WORLDCLIM (we are going to use CHELSA)
 
 
-# 5.2. Topographic heterogeneity
+# 4.1. Topographic heterogeneity
   
   # Vector_Ruggedness_Measure
   vrm <- raster("./Data/Topographic_Index/vrm_1KMmn_GMTEDmd.tif") %>%
@@ -211,7 +198,7 @@ if(myspecies_rangemap$Range == "Yes"){
   names(Northness) <- "Northness"
   
   
-# 5.2. Bioclim
+# 4.2. Bioclim
   
   # Idenfitying tiles based on Area of study
   
@@ -228,16 +215,8 @@ if(myspecies_rangemap$Range == "Yes"){
   # Merging tiles
   clim_tiles_merge <- tile_merge(clim_tiles) %>%
       resample(vrm, method = "ngb")
-  
-  
-  
-  # Agregagate (Let's try coarse resolution to speed up the process)!!!!!!!!!!!!!!!!
-  #clim_tiles_merge_agg <- raster::aggregate(clim_tiles_merge, fact=10, fun=mean) %>%
-  #  resample(vrm, method = "ngb")
-  
-  
-  
-# 5.3. Productivity
+ 
+# 4.3. Productivity
   
   # Loading Dynamic Habitat Index  (all .tiff files)
     fpar_all <- list.files("./Data/fpar_can", pattern=".tif$", full.names = T)
@@ -268,8 +247,7 @@ if(myspecies_rangemap$Range == "Yes"){
         resample(vrm, method = "ngb")                                # resample using previous raster
       names(fpar_b3_mean) <- "Variation_annual_productivity_b3"      # rename variable
 
-      
-# 5.4. Water proximity
+# 4.4. Water proximity
       
   # Percentage of lakes
       
@@ -278,9 +256,74 @@ if(myspecies_rangemap$Range == "Yes"){
     lakes_100m_agg <- aggregate(lakes_100m, fact=10, fun=sum)%>% # aggregating 100m cells into 1000m cells, using 'sum' function
       resample(vrm, method = "ngb")
     names(lakes_100m_agg) <- "Lakes_percentage"
-    
 
-# 5.5  Stacking Predictors ----------
+# 4.5 Landcover data 
+
+# Bare areas
+bare_areas_all <- list.files("./Data/Bare_areas_mean", pattern=".tif$", full.names = T)
+bare_areas <- lapply(bare_areas_all, raster) %>% 
+  stack() %>% 
+  crop(box_extent_analysis_bf)%>%                              
+  calc(mean)
+names(bare_areas) <- "Bare_areas"
+
+# Cropland 
+Cropland_all <- list.files("./Data/Cropland_mean", pattern=".tif$", full.names = T)
+Cropland <- lapply(Cropland_all, raster) %>%           # Create raster
+  stack()  %>%                                                 # Stack them
+  crop(box_extent_analysis_bf) %>% 
+  calc(mean)
+names(Cropland) <- "Cropland"
+
+# Flooded vegetation 
+Flooded_vegetation_all <- list.files("./Data/Flooded_vegetation_mean", pattern=".tif$", full.names = T)
+Flooded_vegetation <- lapply(Flooded_vegetation_all, raster) %>%           # Create raster
+  stack()  %>%                                                 # Stack them
+  crop(box_extent_analysis_bf) %>% 
+  calc(mean)
+names(Flooded_vegetation) <- "Flooded_vegetation"
+
+# Grassland 
+Grassland_all <- list.files("./Data/Grassland_mean", pattern=".tif$", full.names = T)
+Grassland <- lapply(Grassland_all, raster) %>%           # Create raster
+  stack()  %>%                                                 # Stack them
+  crop(box_extent_analysis_bf) %>% 
+  calc(mean)
+names(Grassland) <- "Grassland"
+
+# Other vegetation 
+Other_vegetation_all <- list.files("./Data/Other_vegetation_mean", pattern=".tif$", full.names = T)
+Other_vegetation <- lapply(Other_vegetation_all, raster, band=1) %>%           # Create raster
+  stack()  %>%                                                 # Stack them
+  crop(box_extent_analysis_bf) %>% 
+  calc(mean)
+names(Other_vegetation) <- "Other_vegetation"
+
+# Snow and ice 
+Snow_ice_all <- list.files("./Data/Snow_ice_mean", pattern=".tif$", full.names = T)
+Snow_ice <- lapply(Snow_ice_all, raster, band=1) %>%           # Create raster
+  stack()  %>%                                                 # Stack them
+  crop(box_extent_analysis_bf) %>% 
+  calc(mean)
+names(Snow_ice) <- "Snow_and_ice"
+
+# Tree cover 
+Tree_cover_all <- list.files("./Data/Tree_cover_mean", pattern=".tif$", full.names = T)
+Tree_cover <- lapply(Tree_cover_all, raster, band=1) %>%           # Create raster
+  stack()  %>%                                                 # Stack them
+  crop(box_extent_analysis_bf) %>% 
+  calc(mean)
+names(Tree_cover) <- "Tree_cover"
+
+# Urban areas 
+Urban_areas_all <- list.files("./Data/Urban_mean", pattern=".tif$", full.names = T)
+Urban_areas <- lapply(Urban_areas_all, raster, band=1) %>%           # Create raster
+  stack()  %>%                                                 # Stack them
+  crop(box_extent_analysis_bf) %>% 
+  calc(mean)
+names(Urban_areas) <- "Urban_areas"
+
+# 4.6.  Stacking Predictors ----------
     
     predictors <- stack(vrm,
                    roughness,
@@ -288,13 +331,20 @@ if(myspecies_rangemap$Range == "Yes"){
                    Eastness,
                    Northness,
                    lakes_100m_agg,
-                   if(maxValue(fpar_b1_mean) != 0 && minValue(fpar_b1_mean) !=0){fpar_b1_mean}else{},
-                   if(maxValue(fpar_b2_mean) != 0 && minValue(fpar_b2_mean) !=0){fpar_b2_mean}else{},
-                   if(maxValue(fpar_b3_mean) != 0 && minValue(fpar_b3_mean) !=0){fpar_b3_mean}else{},
-                   clim_tiles_merge, na.rm=T)
-    
-    
-# 5.5. Removing collinear variables
+                   if(maxValue(fpar_b1_mean) != 0){fpar_b1_mean}else{},
+                    if(maxValue(fpar_b2_mean) != 0){fpar_b2_mean}else{},
+                    if(maxValue(fpar_b3_mean) != 0){fpar_b3_mean}else{},
+                    clim_tiles_merge,
+                    if(maxValue(bare_areas) != 0 ){bare_areas}else{}, 
+                    if(maxValue(Cropland) != 0 ){Cropland}else{}, 
+                    if(maxValue(Grassland) != 0 ){Grassland}else{},
+                    if(maxValue(Flooded_vegetation) != 0 ){Flooded_vegetation}else{}, 
+                    if(maxValue(Other_vegetation) != 0 ){Other_vegetation}else{},
+                    if(maxValue(Snow_ice) != 0){Snow_ice}else{},
+                    if(maxValue(Tree_cover) != 0 ){Tree_cover}else{},
+                    if(maxValue(Urban_areas)!=0){Urban_areas}else{}, na.rm=T)
+        
+# 4.7. Removing collinear variables
 
 # Calculating collinearity
     collinearity_test <- removeCollinearity(predictors,
@@ -303,12 +353,9 @@ if(myspecies_rangemap$Range == "Yes"){
 
   # Sub-setting variables
     noncollinear_predictors <- stack(subset(predictors, collinearity_test))
-    #%>%
-    #projectRaster(crs = aeac, res = 1000, method='bilinear')
-   
-  
-    
-# 6. Creating background points ----------
+    noncollinear_predictors[[2]]
+     
+# 5. Creating background points ----------
     # Identify number of background points (bg) for HSMs within the geographic range (EBARs), testing three bg.
     
    
@@ -323,6 +370,8 @@ if(myspecies_rangemap$Range == "Yes"){
     huge_study_area <- 0.20 # take 20% if area of study contains  100,000 - 1,000,000 grid cells
     
     very_huge_study_area <- 0.05 # take 20% if area of study contains less than 1,000,000 grid cells
+
+    extremely_huge_study_area <- 0.01 #take 1% if area of study contains more than 2,000,000 grid cells 
     
     
     if(study_area_size < 100000){
@@ -340,9 +389,13 @@ if(myspecies_rangemap$Range == "Yes"){
       background_points <- c(
         round(study_area_size*very_huge_study_area, 0)
       )
-    }
+    }else if (study_area_size >= 2000000){
+  
+  background_points <- c(
+   round(study_area_size*extremely_huge_study_area, 0)
+  )} 
     
-# 7. Creating sampling bias layer-----------
+# 6. Creating sampling bias layer-----------
     
     # Creating a sampling bias layer to select background point from these areas
     
@@ -364,15 +417,14 @@ if(myspecies_rangemap$Range == "Yes"){
       resample(noncollinear_predictors[[1]])
     
 
-# 8. Model fitting ------
+# 7. Model fitting ------
 
-# 8.1. Checking for intersection of predictors stack and observations
+# 7.1. Checking for intersection of predictors stack and observations
     
     points_predictors_overlap <- raster::extract(noncollinear_predictors, points_thin_sf, df=T)%>%
     na.omit()
     obs_thin_noNA <- obs_thin[as.vector(points_predictors_overlap$ID),]
     
-   
     # Creating final occs (occurrences) object
     
     occs <- st_as_sf(x = obs_thin_noNA,                         
@@ -382,11 +434,12 @@ if(myspecies_rangemap$Range == "Yes"){
      dplyr::rename(Longitude = X,  Latitude =  Y)
  
    
-# 8.2 creating background points (pseudo-absences) using bias layer
+# 7.2 creating background points (pseudo-absences) using bias layer
     
     bg_points <- dismo::randomPoints(obs_density_a_wgs84, n = background_points) %>% as.data.frame()
     colnames(bg_points) <- colnames(obs_thin_noNA)
-    
+
+# 7.3. background using bias
     bg_bias <- xyFromCell(!is.na(obs_density_a_wgs84),
                           sample(ncell(!is.na(obs_density_a_wgs84)),
                                  nrow(bg_points),
@@ -395,11 +448,11 @@ if(myspecies_rangemap$Range == "Yes"){
     
     
 
-# 8.3 Modeling (using Maxent in ENMeval) basic parameters
+# 8. Modeling (using Maxent in ENMeval) basic parameters
     
-  # 8.3.1 Model settings
+  # 8.1. Model settings
     
-    # 5.1 Selecting features based on number of occurrences ---------------
+    # 8.1.1. Selecting features based on number of occurrences ---------------
     if(nrow(occs_df) <=10){
       meth = 'jackknife'
       features <- "L"
@@ -420,7 +473,7 @@ if(myspecies_rangemap$Range == "Yes"){
     meth
     
     
-  # 8.3.2 Partition: select method based on number of occurrences
+  # 8.1.2. Partition: select method based on number of occurrences
     
     if(nrow(occs_df) <=25){
       user_partition  <- get.jackknife(occs_df, bg_bias)
@@ -432,7 +485,7 @@ if(myspecies_rangemap$Range == "Yes"){
     
     
     
-# 8.3.4. Run model, using ENMeval package (Maxent algorithm)
+# 8.1.3. Run model, using ENMeval package (Maxent algorithm)
     
   model_species <- ENMeval::ENMevaluate(occs = occs_df,
                                         envs = noncollinear_predictors,
@@ -450,7 +503,7 @@ if(myspecies_rangemap$Range == "Yes"){
                                         
   )
 
- # 8.3.5 Model results 
+ # 8.1.4. Model results 
   
   # All models
   res_model_species <- model_species@results
@@ -483,19 +536,8 @@ if(myspecies_rangemap$Range == "Yes"){
   plot(best_model_prediction)
   plot(occs, add=T)
   
-  
-  ############ STOP HERE, WE WILL REVISIT UNCERTAINTY #################################
-  
-  #####################################################################################
-  
 # 10.  Model uncertainty ---------
 
-# Selecting best model - parameters
-  
-  best_model_maxent <- model_species@models[model_species@results$or.10p.avg == min(optimal_model$or.10p.avg) & model_species@results$auc.val.avg == max(optimal_model$auc.val.avg)]
-  
-  optimal_model_param$rm <- data.frame(optimal_model)
-  as.vector(optimal_model_param$rm)
 # let's run 10 models and calculate the coefficient of variance (the only think that will change is background points)
 
   # Modelling
@@ -558,6 +600,29 @@ if(myspecies_rangemap$Range == "Yes"){
     plot(box_extent_analysis_bf_aeac, add=T)
     plot(uncertainty_p)
     plot(box_extent_analysis_bf_aeac, add=T)
+
+plot(best_model_prediction, ylim = c(40, 50))
+
+levelplot(best_model_prediction, margin = FALSE)
+levelplot(uncertainty_p, margin = FALSE)
+
+# 12. Write outputs -----------
+
+# 12.1. Load and project into NCC national grid 
+
+nat_grid <- raster("./Data/national_grid/constant_grid.tif")
+species_prediction_nat_grid <- projectRaster(best_model_prediction, crs = proj4string(nat_grid), res = 1000, method = "bilinear")
+species_uncertainty_nat_grid <- projectRaster(uncertainty, crs = proj4string(nat_grid), res = 1000, method = "bilinear")
+
+# 12.1.1 Write NCC projected rasters 
+writeRaster(species_prediction_nat_grid, filename = paste0("./Results/SAR_from_ECCC/", myspecies,".tif"), options = c('TFW = YES'))
+writeRaster(species_uncertainty_nat_grid, filename = paste0("./Results/SAR_from_ECCC/",myspecies, "_uncertainty.tif"), options = c('TFW = YES'))
+
+# 12.2. Write aeac projected rasters for calculations 
+writeRaster(model_species_prediction_p, filename = paste0("./Results/SAR_from_ECCC_for_calculations/", myspecies,".tif"), options = c('TFW = YES'))
+writeRaster(uncertainty_p, filename = paste0("./Results/SAR_from_ECCC_for_calculations/",myspecies, "_uncertainty.tif"), options = c('TFW = YES'))
+
+#############END PIPELINE ####################################
     
 #############END PIPELINE ####################################
 
