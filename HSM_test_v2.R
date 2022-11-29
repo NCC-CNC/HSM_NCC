@@ -556,29 +556,13 @@ names(Urban_areas) <- "Urban_areas"
                                    nrow(bg_points),
                                    prob =  values(!is.na(obs_density_a_wgs84))))
       colnames(bg_bias_b) <- colnames(occs_df)
-      
-      
-      # 8.3.2 Partition: select method based on number of occurrences
-      
-      if(nrow(occs_df) <=25){
-        user_partition_b  <- get.jackknife(occs_df, bg_bias_b)
-        
-      }else if(nrow(occs_df) > 25){
-        user_partition_b  <- get.randomkfold(occs_df, bg_bias_b, 10)
-        
-      }
-      
-      
-      user_partition_b$bg.grp
+     
       
       model_10[[i]] <- ENMevaluate(occs = occs_df,
                                    envs = noncollinear_predictors, bg = bg_bias_b,
-                                   partitions='user',
-                                   user.grp = list(occs.grp = user_partition_b$occs.grp,
-                                                   bg.grp = user_partition_b$bg.grp),
-                                   method = meth,
+                                   partitions = 'block',
                                    algorithm = 'maxent.jar',
-                                   tune.args = list(fc = optimal_model$fc, rm = as.numeric(as.vector(optimal_model$rm))),
+                                  tune.args = list(fc = "L", rm = 1),
                                    parallel =  TRUE,
                                    updateProgress = TRUE,
                                    parallelType = "doParallel"
