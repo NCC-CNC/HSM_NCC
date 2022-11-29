@@ -69,6 +69,9 @@ system.file("java", package="dismo")
   #[See:](https://spatialreference.org/ref/esri/102001/proj4/) 
     aeac="+proj=aea +lat_1=50 +lat_2=70 +lat_0=40 +lon_0=-96 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs"
 
+# Sourcing species cleanup functions 
+
+source("Species_data_cleanup_functions.R")
 
 # 2. Occurrences -----------
 
