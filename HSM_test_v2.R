@@ -263,67 +263,43 @@ if(myspecies_rangemap$Range == "Yes"){
 # 4.5 Landcover data 
 
 # Bare areas
-bare_areas_all <- list.files("./Data/Bare_areas_mean", pattern=".tif$", full.names = T)
-bare_areas <- lapply(bare_areas_all, raster) %>% 
-  stack() %>% 
-  crop(box_extent_analysis_bf)%>%                              
-  calc(mean)
+bare_areas <- raster("./Data/Bare_areas_mean/class_Clip_ESACCI-LC-L4-LCCS-Map-300m-P1Y-2015-v2.0.7 .tif") %>% 
+  crop(box_extent_analysis_bf)                             
 names(bare_areas) <- "Bare_areas"
 
 # Cropland 
-Cropland_all <- list.files("./Data/Cropland_mean", pattern=".tif$", full.names = T)
-Cropland <- lapply(Cropland_all, raster) %>%           # Create raster
-  stack()  %>%                                                 # Stack them
-  crop(box_extent_analysis_bf) %>% 
-  calc(mean)
+Cropland <- raster("./Data/Cropland_mean/class_Clip_ESACCI-LC-L4-LCCS-Map-300m-P1Y-2015-v2.0.7 .tif") %>%
+  crop(box_extent_analysis_bf) 
 names(Cropland) <- "Cropland"
 
 # Flooded vegetation 
-Flooded_vegetation_all <- list.files("./Data/Flooded_vegetation_mean", pattern=".tif$", full.names = T)
-Flooded_vegetation <- lapply(Flooded_vegetation_all, raster) %>%           # Create raster
-  stack()  %>%                                                 # Stack them
-  crop(box_extent_analysis_bf) %>% 
-  calc(mean)
+Flooded_vegetation <- raster("./Data/Flooded_vegetation_mean/class_Clip_ESACCI-LC-L4-LCCS-Map-300m-P1Y-2015-v2.0.7 .tif") %>%
+  crop(box_extent_analysis_bf) 
 names(Flooded_vegetation) <- "Flooded_vegetation"
 
 # Grassland 
-Grassland_all <- list.files("./Data/Grassland_mean", pattern=".tif$", full.names = T)
-Grassland <- lapply(Grassland_all, raster) %>%           # Create raster
-  stack()  %>%                                                 # Stack them
-  crop(box_extent_analysis_bf) %>% 
-  calc(mean)
+Grassland <- raster("./Data/Grassland_mean/class_Clip_ESACCI-LC-L4-LCCS-Map-300m-P1Y-2015-v2.0.7 .tif") %>%                                        
+  crop(box_extent_analysis_bf) 
 names(Grassland) <- "Grassland"
 
 # Other vegetation 
-Other_vegetation_all <- list.files("./Data/Other_vegetation_mean", pattern=".tif$", full.names = T)
-Other_vegetation <- lapply(Other_vegetation_all, raster, band=1) %>%           # Create raster
-  stack()  %>%                                                 # Stack them
-  crop(box_extent_analysis_bf) %>% 
-  calc(mean)
+Other_vegetation <- raster("./Data/Other_vegetation_mean/class_Clip_ESACCI-LC-L4-LCCS-Map-300m-P1Y-2015-v2.0.7 .tif") %>%
+  crop(box_extent_analysis_bf) 
 names(Other_vegetation) <- "Other_vegetation"
 
 # Snow and ice 
-Snow_ice_all <- list.files("./Data/Snow_ice_mean", pattern=".tif$", full.names = T)
-Snow_ice <- lapply(Snow_ice_all, raster, band=1) %>%           # Create raster
-  stack()  %>%                                                 # Stack them
-  crop(box_extent_analysis_bf) %>% 
-  calc(mean)
+Snow_ice <- raster("./Data/Snow_ice_mean/class_Clip_ESACCI-LC-L4-LCCS-Map-300m-P1Y-2015-v2.0.7 .tif") %>%                                       
+  crop(box_extent_analysis_bf) 
 names(Snow_ice) <- "Snow_and_ice"
 
 # Tree cover 
-Tree_cover_all <- list.files("./Data/Tree_cover_mean", pattern=".tif$", full.names = T)
-Tree_cover <- lapply(Tree_cover_all, raster, band=1) %>%           # Create raster
-  stack()  %>%                                                 # Stack them
-  crop(box_extent_analysis_bf) %>% 
-  calc(mean)
+Tree_cover <- raster("./Data/Tree_cover_mean/class_Clip_ESACCI-LC-L4-LCCS-Map-300m-P1Y-2015-v2.0.7 .tif") %>%
+  crop(box_extent_analysis_bf) 
 names(Tree_cover) <- "Tree_cover"
 
 # Urban areas 
-Urban_areas_all <- list.files("./Data/Urban_mean", pattern=".tif$", full.names = T)
-Urban_areas <- lapply(Urban_areas_all, raster, band=1) %>%           # Create raster
-  stack()  %>%                                                 # Stack them
-  crop(box_extent_analysis_bf) %>% 
-  calc(mean)
+Urban_areas<- raster("./Data/Urban_mean/class_Clip_ESACCI-LC-L4-LCCS-Map-300m-P1Y-2015-v2.0.7 .tif")  %>%
+  crop(box_extent_analysis_bf) 
 names(Urban_areas) <- "Urban_areas"
 
 # 4.6.  Stacking Predictors ----------
