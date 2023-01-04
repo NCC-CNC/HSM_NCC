@@ -57,7 +57,7 @@ We used the best model's parameters and ran 10 times the model, letting the sele
 
 ### Outputs (rasters 1km2): 
 The following outputs were projected to the NCC national grid (projection: albers equal area conic, resolution: 1km2)
-- Habitat suitability map 
+- Habitat suitability map (continuous and binarized)
 - Uncertainty map (coeficient of variation 10 runs best model)
 
 
