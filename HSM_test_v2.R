@@ -569,21 +569,30 @@ plot(best_model_prediction, ylim = c(40, 50))
 levelplot(best_model_prediction, margin = FALSE)
 levelplot(uncertainty_p, margin = FALSE)
 
-# 12. Write outputs -----------
+# 12. Thresholding values:
 
-# 12.1. Load and project into NCC national grid 
+# 90% of records 
+
+pred_vals_presence <- raster::extract(best_model_prediction, occs)
+pred_vals_presence <- pred_vals_presence[!is.na(pred_vals_presence)]
+n10 <- ceiling(length(pred_vals_presence) * 0.1)
+
+or.10.threshold <- best_model_prediction > sort(pred_vals_presence)[n10]
+plot(or.10.threshold)
+
+# 13. Write outputs -----------
+
+# 13.1. Load and project into NCC national grid 
 
 nat_grid <- raster("./Data/national_grid/constant_grid.tif")
 species_prediction_nat_grid <- projectRaster(best_model_prediction, crs = proj4string(nat_grid), res = 1000, method = "bilinear")
 species_uncertainty_nat_grid <- projectRaster(uncertainty, crs = proj4string(nat_grid), res = 1000, method = "bilinear")
-
-# 12.1.1 Write NCC projected rasters 
+binary_species_prediction_nat_grid <- projectRaster(or.10.threshold, crs = proj4string(nat_grid), res = 1000, method = "bilinear")
+# 13.1.1 Write NCC projected rasters 
 writeRaster(species_prediction_nat_grid, filename = paste0("./Results/SAR_from_ECCC/", myspecies,".tif"), options = c('TFW = YES'))
 writeRaster(species_uncertainty_nat_grid, filename = paste0("./Results/SAR_from_ECCC/",myspecies, "_uncertainty.tif"), options = c('TFW = YES'))
+writeRaster(binary_species_prediction_nat_grid, filename = paste0("./Results/SAR_from_ECCCC/",myspecies, "_binary.tif"), options = c('TFW = YES'))
 
-# 12.2. Write aeac projected rasters for calculations 
-writeRaster(model_species_prediction_p, filename = paste0("./Results/SAR_from_ECCC_for_calculations/", myspecies,".tif"), options = c('TFW = YES'))
-writeRaster(uncertainty_p, filename = paste0("./Results/SAR_from_ECCC_for_calculations/",myspecies, "_uncertainty.tif"), options = c('TFW = YES'))
 
 #############END PIPELINE ####################################
     
