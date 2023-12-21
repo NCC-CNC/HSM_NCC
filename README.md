@@ -64,7 +64,7 @@ The following outputs were projected to the NCC national grid (projection: alber
 - Uncertainty map (coeficient of variation 10 runs best model)
 
 ### Scaling up outputs 
-Using 16 virtual machiches from Google Cloud Compute to scale up the work to produce 1000+ species outputs and biodiversity predictions
+Using 16 virtual machiches from Google Cloud Compute to scale up the work to produce 1000+ species outputs and biodiversity predictions.
 
 
   
