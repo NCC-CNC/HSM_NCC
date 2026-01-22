@@ -5,7 +5,14 @@
 # Notes:         Species occurrences data cleanup 
 # ***********************************************************************************************************
 
-# load needed packages for species occurrence cleanup 
+# ***********************************************************************************************************
+# utf8 encoding
+# File Name:     Species_data_cleanup_functions.R
+# Author:        Nikol Dimitrov
+# Notes:         Functions to clean up species data to be fed into SDM Pipeline
+# ***********************************************************************************************************
+
+# load needed packages for species data cleanup 
 list.of.packages <- c("readr", "rgbif", "raster", 'dplyr', "ggplot2", "countrycode", "CoordinateCleaner", "sp", "spThin", "rnaturalearthdata")
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 
@@ -17,14 +24,8 @@ lapply(list.of.packages, library, character.only =TRUE)
 # Setting main folder as a default
 setwd("C:/HSM_NCC")
 
-# creating species folder 
 
-if(dir.exists("c:/HSM_NCC/thinned_species_data")){
-} else {
-  out_species<-   dir.create("c:/HSM_NCC/thinned_species_data")}
-
-
-# Projection for species coordinates 
+# 1.5. Setting Projection to preserve area for all files 
 
 # Lon-Lat 
 wgs84 <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0 "
@@ -33,19 +34,24 @@ wgs84 <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0 "
 
 # FUNCTION 1 - Export data from gbif and store data into object 
 
+## Parameters: 
+#### speciesName = scientific name of species of interest 
+#;US
 export_gbif_data <- function(speciesName){
-  Obs_gbif_data <- occ_data(scientificName = speciesName,
-                            hasCoordinate = TRUE,
-                            limit=5000, country = "CA") 
-  if (is.null(Obs_gbif_data)) {
+  Obs_data <- read_csv(paste0("C:/HSM_NCC/Data/2026_01_21_CA_GBIF_List/", speciesName, ".csv"))
+  if (is.null(Obs_data)) {
     stop("no species data available")
   } else {
-    Obs_data <- Obs_gbif_data$data 
     return(Obs_data)
   }
 }
 
 # FUNCTION 2 - Clean up species dataset 
+
+## Parameters: 
+### data = takes in loaded dataset from GBIF
+### flagged.data = set to FALSE by default (meaning only not flagged or "clean" data is returned, 
+### if "TRUE" flagged data is returned)
 
 clean_gbif_data <- function(data, flagged.data = FALSE){ 
   # remove occurrences with incomplete coordinate information
@@ -65,7 +71,6 @@ clean_gbif_data <- function(data, flagged.data = FALSE){
                                  tests = c("capitals", "centroids", "equal","gbif", 
                                            "institutions", "zeros", "countries", "outliers"),
                                  verbose = TRUE)
-                                 
   # if parameter for flagged data is true return only flagged data (set to false by default)
   if (flagged.data == TRUE){                 
     # flagged records dataframe 
@@ -77,27 +82,28 @@ clean_gbif_data <- function(data, flagged.data = FALSE){
     
     #remove occurrences with coordinate undertainty greater than 1km
     if ("coordinateUncertaintyInMeters" %in% colnames(data_cl)){
-    data_cl <- data_cl %>% 
-      filter(coordinateUncertaintyInMeters / 1000 <= 1 | is.na(coordinateUncertaintyInMeters))
+      data_cl <- data_cl %>% 
+        filter(coordinateUncertaintyInMeters / 1000 <= 1 | is.na(coordinateUncertaintyInMeters))
     }
-    
     #filter for records that are human observations or occurrences
     if ("basisOfRecord" %in% colnames(data_cl)){
-    data_cl <- data_cl %>% 
-      filter(basisOfRecord %in% c("HUMAN_OBSERVATION", "OCCURRENCE")) 
+      data_cl <- data_cl %>% 
+        filter(basisOfRecord %in% c("HUMAN_OBSERVATION", "OCCURRENCE")) 
     }
-    
     #remove suspicious individual counts (0 counts or really large counts > 99)
     if ("individualCount" %in% colnames(data_cl)){
-    data_cl <- data_cl %>% 
-      filter(individualCount > 0 | is.na(individualCount))%>%
-      filter(individualCount < 99 | is.na(individualCount)) 
+      data_cl <- data_cl %>% 
+        filter(individualCount > 0 | is.na(individualCount))%>%
+        filter(individualCount < 99 | is.na(individualCount)) 
     } 
     return(data_cl)
   } 
 }
 
 # FUNCTION 3 -  plot the data 
+
+## Parameters: 
+#### data = takes in loaded dataset from GBIF 
 
 plot_gbif_data <- function(data) { 
   if (dim(data)[1] == 0) {
@@ -115,27 +121,35 @@ plot_gbif_data <- function(data) {
 
 # FUNCTION 4 - Spatial thinning alogrithm 
 
+## Parameters: 
+#### data = takes in loaded dataset from GBIF 
+#### thinning_par = thinning paramter set by default to 1km 
+
 thin_data <- function(data, thinning_par = 1) {
   
   # run algorithm 
   Obs_data_thinned <- thin(data, lat.col = 'decimalLatitude', long.col = 'decimalLongitude', spec.col = 'scientificName', thin.par = thinning_par, 
-       reps = 1,
-       locs.thinned.list.return = TRUE,
-       write.files = FALSE,
-       write.log.file = FALSE)%>%
-    data.frame()
+                           reps = 1,
+                           locs.thinned.list.return = TRUE,
+                           write.files = FALSE,
+                           write.log.file = FALSE)%>%
+    data.frame() 
   
   return(Obs_data_thinned)
 }
 
+# FUNCTION - Remove NA predictor variable observations 
+
 # FUNCTION 5 - Convert to spatial points 
 
+## Parameters: 
+#### data = takes in loaded dataset from GBIF 
+
 convert_spatial_points <- function(data){
-  # make into spatial points
   
   Obs_data_sp <- data.frame(cbind(data$Longitude, data$Latitude))%>% 
     sp::SpatialPoints(proj4string = CRS(wgs84))
   
   return(Obs_data_sp)
-
+  
 }
